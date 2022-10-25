@@ -1,3 +1,3 @@
 # del-gl
 
-Utility codes that depends on OpenGL. 
+Rust utility codes for OpenGL. 
