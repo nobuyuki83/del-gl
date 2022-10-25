@@ -1,3 +1,5 @@
+//! draw mesh position. The RGB color is defined par index
+
 use crate::gl;
 
 struct ElementBufferObject {

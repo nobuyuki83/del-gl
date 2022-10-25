@@ -1,3 +1,5 @@
+//! draw array of position and color
+
 use crate::gl;
 
 pub struct DrawerArrayPosColor {

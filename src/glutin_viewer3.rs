@@ -1,3 +1,5 @@
+//! class for handling glutin window with 3D navigation
+
 use crate::gl;
 
 use glutin::event::{ElementState, Event, MouseButton, WindowEvent};

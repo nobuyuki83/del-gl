@@ -1,3 +1,5 @@
+//! draw mesh with colormap
+
 use crate::gl;
 
 struct ElementBufferObject {
