@@ -3,6 +3,9 @@ name = "del-gl"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
+license = "MIT"
+repository = "https://github.com/nobuyuki83/del-gl/"
+description = "OpenGL utility library in Rust language."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
