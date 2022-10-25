@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 fn main() {
     let mut dest = PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap());
-    dest.push("build");
+    dest.push("target");
 
     println!("{}",dest.to_str().unwrap());
 

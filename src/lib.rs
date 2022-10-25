@@ -10,7 +10,7 @@ pub mod gl {
     pub use self::Gles2 as Gl;
 
     // gl_bindings.rs is generated in build.rs using https://crates.io/crates/gl_generator
-    include!(concat!(env!("CARGO_MANIFEST_DIR"), "/build/gl_bindings.rs"));
+    include!(concat!(env!("CARGO_MANIFEST_DIR"), "/target/gl_bindings.rs"));
 }
 
 pub mod drawer_arrayposcolor;
