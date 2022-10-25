@@ -1,0 +1,5 @@
+/target
+build/gl_bindings.rs
+.DS_Store
+.idea
+Cargo.lock
