@@ -17,5 +17,4 @@ pub mod gl {
 pub mod drawer_arrayposcolor;
 pub mod drawer_meshpos;
 pub mod drawer_meshposcolor;
-pub mod glutin_viewer2;
-pub mod glutin_viewer3;
+pub mod glutin;

@@ -10,7 +10,7 @@ use glutin::{ContextBuilder, ContextWrapper, PossiblyCurrent};
 use del_misc::view_navigation3::Navigation3;
 use del_misc::view_ui_state::UiState;
 
-pub struct GlutinViewer3 {
+pub struct Viewer3 {
     pub windowed_context: ContextWrapper<PossiblyCurrent,glutin::window::Window>,
     pub gl: gl::Gles2,
     pub nav: Navigation3,
@@ -21,7 +21,7 @@ pub struct GlutinViewer3 {
     pub is_view_changed: bool
 }
 
-impl GlutinViewer3 {
+impl Viewer3 {
     pub fn open() -> (Self, EventLoop<()>) {
         let el = EventLoop::new();
         let wb = WindowBuilder::new().with_title("A fantastic window!");
@@ -40,7 +40,7 @@ impl GlutinViewer3 {
             println!("OpenGL version {}", version);
         }
 
-        (GlutinViewer3 {
+        (Viewer3 {
             windowed_context: windowed_context,
             gl: gl,
             ui_state: UiState::new(),
