@@ -117,25 +117,29 @@ void main() {
 
     }
 
-    pub fn add_element(
+    pub fn add_element<T>(
         &mut self,
         gl: &gl::Gl,
         mode: gl::types::GLenum,
-        elem_vtx: &Vec<gl::types::GLuint>,
-        color: [f32;3]) {
+        elem_vtx: &Vec<T>,
+        color: [f32;3])
+    where T: 'static + Copy + num_traits::AsPrimitive<gl::types::GLuint>
+    {
+        use crate::gl::types::GLuint;
         unsafe {
             gl.BindVertexArray(self.vao);
             let mut ebo0 = std::mem::zeroed();
             gl.GenBuffers(1, &mut ebo0);
             gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo0);
+            let elem_vtx0: Vec<GLuint> = elem_vtx.iter().map(|i| (*i).as_() ).collect();
             gl.BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                (elem_vtx.len() * std::mem::size_of::<usize>()) as gl::types::GLsizeiptr,
-                elem_vtx.as_ptr() as *const _,
+                (elem_vtx0.len() * std::mem::size_of::<usize>()) as gl::types::GLsizeiptr,
+                elem_vtx0.as_ptr() as *const _,
                 gl::STATIC_DRAW);
             self.ebos.push(
                 ElementBufferObject {
-                    mode: mode, elem_size: elem_vtx.len(), ebo: ebo0, color:color });
+                    mode: mode, elem_size: elem_vtx0.len(), ebo: ebo0, color:color });
         }
     }
 

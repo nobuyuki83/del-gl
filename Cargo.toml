@@ -1,6 +1,6 @@
 [package]
 name = "del-gl"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 build = "build.rs"
 license = "MIT"
@@ -12,6 +12,7 @@ description = "OpenGL utility library in Rust language."
 [dependencies]
 glutin = "0.29.1"
 del-misc = "0.1.0"
+num-traits = "0.2.15"
 
 [build-dependencies]
 gl_generator = "0.14.0"
