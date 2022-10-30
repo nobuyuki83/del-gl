@@ -7,8 +7,8 @@ use glutin::event_loop::EventLoop;
 use glutin::window::WindowBuilder;
 use glutin::{ContextBuilder, ContextWrapper, PossiblyCurrent};
 
-use del_misc::view_navigation3::Navigation3;
-use del_misc::view_ui_state::UiState;
+use crate::nalgebra::view_navigation3::Navigation3;
+use crate::view_ui_state::UiState;
 
 pub struct Viewer3 {
     pub windowed_context: ContextWrapper<PossiblyCurrent,glutin::window::Window>,
