@@ -8,7 +8,7 @@ struct ElementBufferObject {
     ebo: gl::types::GLuint,
 }
 
-pub struct DrawerMeshPosColor {
+pub struct Drawer {
     pub color_map: Vec<[f32;3]>,
     pub val_min: f32,
     pub val_max: f32,
@@ -24,9 +24,9 @@ pub struct DrawerMeshPosColor {
     ebo: ElementBufferObject,
 }
 
-impl DrawerMeshPosColor {
+impl Drawer {
     pub fn new() -> Self {
-        DrawerMeshPosColor {
+        Drawer {
             color_map: Vec::<[f32;3]>::new(),
             val_min: 0.0,
             val_max: 1.0,

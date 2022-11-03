@@ -9,7 +9,7 @@ struct ElementBufferObject {
     color: [f32;3]
 }
 
-pub struct DrawerMeshPos {
+pub struct Drawer {
     program: gl::types::GLuint,
     pub ndim: i32,
     num_point: i32,
@@ -22,9 +22,9 @@ pub struct DrawerMeshPos {
     ebos: Vec<ElementBufferObject>,
 }
 
-impl DrawerMeshPos {
+impl Drawer {
     pub fn new() -> Self {
-        DrawerMeshPos {
+        Drawer {
             program: 0,
             ndim: 0,
             num_point: 0,

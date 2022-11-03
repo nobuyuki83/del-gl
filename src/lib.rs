@@ -16,9 +16,11 @@ pub mod gl {
     include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
 }
 
-pub mod drawer_arrayposcolor;
-pub mod drawer_meshpos;
-pub mod drawer_meshposcolor;
+pub mod array;
+pub mod array_vtxcolor;
+
+pub mod mesh;
+pub mod mesh_colormap;
 
 // folder
 pub mod glutin;

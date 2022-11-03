@@ -2,12 +2,12 @@
 
 use crate::gl;
 
-pub struct DrawerArrayPosColor {
+pub struct Drawer {
     pub program: gl::types::GLuint,
     pub mode: gl::types::GLenum,
 }
 
-impl DrawerArrayPosColor {
+impl Drawer {
     pub fn compile_shader(&mut self, gl: &gl::Gl) {
         const VS_SRC: &[u8] = b"
 #version 100
@@ -53,15 +53,15 @@ void main() {
     pub fn initialize(
         &self,
         gl: &gl::Gl,
-        vtx_xyz: &Vec<f32>) {
+        vtx2xyrgb: &Vec<f32>) {
         unsafe {
             let mut vb = std::mem::zeroed();
             gl.GenBuffers(1, &mut vb);
             gl.BindBuffer(gl::ARRAY_BUFFER, vb);
             gl.BufferData(
                 gl::ARRAY_BUFFER,
-                (vtx_xyz.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-                vtx_xyz.as_ptr() as *const _,
+                (vtx2xyrgb.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                vtx2xyrgb.as_ptr() as *const _,
                 gl::STATIC_DRAW,
             );
 
