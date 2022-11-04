@@ -16,6 +16,8 @@ pub mod gl {
     include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
 }
 
+pub mod utility;
+
 pub mod array;
 pub mod array_vtxcolor;
 

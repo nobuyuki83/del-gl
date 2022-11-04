@@ -101,33 +101,8 @@ void main() {
         let fs_src = glsl_header + &glsl_colormap + &glsl_code;
 
         unsafe {
-            let vs = gl.CreateShader(gl::VERTEX_SHADER);
-            gl.ShaderSource(vs, 1, [VS_SRC.as_ptr() as *const _].as_ptr(), std::ptr::null());
-            gl.CompileShader(vs);
-
-            let fs = gl.CreateShader(gl::FRAGMENT_SHADER);
-            gl.ShaderSource(fs, 1, [fs_src.as_ptr() as *const _].as_ptr(), std::ptr::null());
-            gl.CompileShader(fs);
-
-            self.program = gl.CreateProgram();
-            gl.AttachShader(self.program, vs);
-            gl.AttachShader(self.program, fs);
-            gl.LinkProgram(self.program);
-            assert!( gl.IsProgram(self.program) != 0 );
-            {
-                let mut success: gl::types::GLint = 0;
-                gl.GetProgramiv(self.program, gl::LINK_STATUS, &mut success);
-                if success == 0 {
-                    let info_log: [i8; 512] = [0; 512];
-                    let mut length: i32 = 512;
-                    gl.GetProgramInfoLog(self.program, 512, &mut length, info_log.as_ptr() as *mut _);
-                    println!("{}", length);
-                    let info_log0 = String::from_utf8(info_log.iter().map(|&c| c as u8).collect());
-                    println!("ERROR::SHADER::PROGRAM::LINKING_FAILED {:?}", info_log0);
-                }
-            }
-            gl.DeleteShader(vs);
-            gl.DeleteShader(fs);
+            self.program = crate::utility::compile_shaders(
+                gl, VS_SRC, fs_src.as_bytes());
         }
 
         unsafe { // make VAO
@@ -164,7 +139,7 @@ void main() {
         &mut self,
         gl: &gl::Gl,
         mode: gl::types::GLenum,
-        elem_vtx: &Vec<T>)
+        elem2vtx: &Vec<T>)
         where T: 'static + Copy + num_traits::AsPrimitive<gl::types::GLuint> {
         use crate::gl::types::GLuint;
         unsafe {
@@ -172,14 +147,14 @@ void main() {
             let mut ebo0 = std::mem::zeroed();
             gl.GenBuffers(1, &mut ebo0);
             gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo0);
-            let elem_vtx0: Vec<GLuint> = elem_vtx.iter().map(|i| (*i).as_() ).collect();
+            let elem2vtx0: Vec<GLuint> = elem2vtx.iter().map(|i| (*i).as_() ).collect();
             gl.BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                (elem_vtx0.len() * std::mem::size_of::<usize>()) as gl::types::GLsizeiptr,
-                elem_vtx0.as_ptr() as *const _,
+                (elem2vtx0.len() * std::mem::size_of::<GLuint>()) as gl::types::GLsizeiptr,
+                elem2vtx0.as_ptr() as *const _,
                 gl::STATIC_DRAW);
             self.ebo.mode = mode;
-            self.ebo.elem_size = elem_vtx0.len();
+            self.ebo.elem_size = elem2vtx0.len();
             self.ebo.ebo = ebo0;
         }
     }

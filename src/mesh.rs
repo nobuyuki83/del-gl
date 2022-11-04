@@ -62,33 +62,7 @@ void main() {
 }
 \0";
         unsafe {
-            let vs = gl.CreateShader(gl::VERTEX_SHADER);
-            gl.ShaderSource(vs, 1, [VS_SRC.as_ptr() as *const _].as_ptr(), std::ptr::null());
-            gl.CompileShader(vs);
-
-            let fs = gl.CreateShader(gl::FRAGMENT_SHADER);
-            gl.ShaderSource(fs, 1, [FS_SRC.as_ptr() as *const _].as_ptr(), std::ptr::null());
-            gl.CompileShader(fs);
-
-            self.program = gl.CreateProgram();
-            gl.AttachShader(self.program, vs);
-            gl.AttachShader(self.program, fs);
-            gl.LinkProgram(self.program);
-            assert!( gl.IsProgram(self.program) != 0 );
-            {
-                let mut success: gl::types::GLint = 0;
-                gl.GetProgramiv(self.program, gl::LINK_STATUS, &mut success);
-                if success == 0 {
-                    let info_log: [i8; 512] = [0; 512];
-                    let mut length: i32 = 512;
-                    gl.GetProgramInfoLog(self.program, 512, &mut length, info_log.as_ptr() as *mut _);
-                    println!("{}", length);
-                    let info_log0 = String::from_utf8(info_log.iter().map(|&c| c as u8).collect());
-                    println!("ERROR::SHADER::PROGRAM::LINKING_FAILED {:?}", info_log0);
-                }
-            }
-            gl.DeleteShader(vs);
-            gl.DeleteShader(fs);
+            self.program = crate::utility::compile_shaders(gl, VS_SRC, FS_SRC);
         }
 
         unsafe { // make VAO

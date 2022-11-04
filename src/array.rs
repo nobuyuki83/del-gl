@@ -42,18 +42,8 @@ void main() {
 }
 \0";
         unsafe {
-            let vs = gl.CreateShader(gl::VERTEX_SHADER);
-            gl.ShaderSource(vs, 1, [VS_SRC.as_ptr() as *const _].as_ptr(), std::ptr::null());
-            gl.CompileShader(vs);
-
-            let fs = gl.CreateShader(gl::FRAGMENT_SHADER);
-            gl.ShaderSource(fs, 1, [FS_SRC.as_ptr() as *const _].as_ptr(), std::ptr::null());
-            gl.CompileShader(fs);
-
-            self.program = gl.CreateProgram();
-            gl.AttachShader(self.program, vs);
-            gl.AttachShader(self.program, fs);
-            gl.LinkProgram(self.program);
+            self.program = crate::utility::compile_shaders(
+                gl, VS_SRC, FS_SRC);
         }
     }
 
