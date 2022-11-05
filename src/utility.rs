@@ -33,3 +33,11 @@ pub unsafe fn compile_shaders(
     gl.DeleteShader(fs);
     id_program
 }
+
+pub unsafe fn get_location (
+    gl: &gl::Gl,
+    name: &str,
+    id_program: gl::types::GLuint) -> gl::types::GLint {
+    let cname = std::ffi::CString::new(name).expect("CString::new failed");
+    gl.GetUniformLocation(id_program, cname.as_ptr())
+}

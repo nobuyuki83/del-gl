@@ -42,8 +42,11 @@ void main() {
 }
 \0";
         unsafe {
-            self.program = crate::utility::compile_shaders(
-                gl, VS_SRC, FS_SRC);
+            use crate::utility::{get_location, compile_shaders};
+            self.program = compile_shaders(gl, VS_SRC, FS_SRC);
+            self.loc_mat_modelview = get_location(gl, "matMV", self.program);
+            self.loc_mat_projection = get_location(gl, "matPrj", self.program);
+            self.loc_color = get_location(gl, "color", self.program);
         }
     }
 
@@ -80,20 +83,7 @@ void main() {
             gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
         }
 
-        unsafe {  // locate uniform variables, should come after VAO is made
-            {
-                let cname = std::ffi::CString::new("matMV").expect("CString::new failed");
-                self.loc_mat_modelview = gl.GetUniformLocation(self.program, cname.as_ptr());
-            }
-            {
-                let cname = std::ffi::CString::new("matPrj").expect("CString::new failed");
-                self.loc_mat_projection = gl.GetUniformLocation(self.program, cname.as_ptr());
-            }
-            {
-                let cname = std::ffi::CString::new("color").expect("CString::new failed");
-                self.loc_color          = gl.GetUniformLocation(self.program, cname.as_ptr());
-            }
-        }
+
     }
 
     pub fn draw_frame(

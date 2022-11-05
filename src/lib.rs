@@ -23,6 +23,7 @@ pub mod array_vtxcolor;
 
 pub mod mesh;
 pub mod mesh_colormap;
+pub mod mesh_tex;
 
 // folder
 pub mod glutin;

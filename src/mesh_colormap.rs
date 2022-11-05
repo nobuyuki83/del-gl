@@ -101,8 +101,12 @@ void main() {
         let fs_src = glsl_header + &glsl_colormap + &glsl_code;
 
         unsafe {
-            self.program = crate::utility::compile_shaders(
-                gl, VS_SRC, fs_src.as_bytes());
+            use crate::utility::{get_location, compile_shaders};
+            self.program = compile_shaders(gl, VS_SRC, fs_src.as_bytes());
+            self.loc_mat_modelview = get_location(gl, "matMV", self.program);
+            self.loc_mat_projection = get_location(gl, "matPrj", self.program);
+            self.loc_val_min = get_location(gl, "val_min", self.program);
+            self.loc_val_max = get_location(gl, "val_max", self.program);
         }
 
         unsafe { // make VAO
