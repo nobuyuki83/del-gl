@@ -101,7 +101,7 @@ void main() {
         &mut self,
         gl: &gl::Gl,
         mode: gl::types::GLenum,
-        elem_vtx: &Vec<T>,
+        elem2vtx: &Vec<T>,
         color: Option<[f32; 3]>)
         where T: 'static + Copy + num_traits::AsPrimitive<gl::types::GLuint>
     {
@@ -111,7 +111,7 @@ void main() {
             let mut ebo0 = std::mem::zeroed();
             gl.GenBuffers(1, &mut ebo0);
             gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo0);
-            let elem_vtx0: Vec<GLuint> = elem_vtx.iter().map(|i| (*i).as_()).collect();
+            let elem_vtx0: Vec<GLuint> = elem2vtx.iter().map(|i| (*i).as_()).collect();
             gl.BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (elem_vtx0.len() * std::mem::size_of::<usize>()) as gl::types::GLsizeiptr,

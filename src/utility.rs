@@ -41,3 +41,26 @@ pub unsafe fn get_location (
     let cname = std::ffi::CString::new(name).expect("CString::new failed");
     gl.GetUniformLocation(id_program, cname.as_ptr())
 }
+
+pub unsafe fn gen_texture(
+    gl: &gl::Gl,
+    width: gl::types::GLsizei,
+    height: gl::types::GLsizei,
+    data: &[u8],
+    format: gl::types::GLenum) -> gl::types::GLuint {
+    gl.Enable(gl::TEXTURE_2D);
+    gl.ActiveTexture(gl::TEXTURE0);
+    let mut id_tex: gl::types::GLuint = 0;
+    gl.GenTextures(1, &mut id_tex);
+    gl.BindTexture(gl::TEXTURE_2D, id_tex);
+    gl.PixelStorei(gl::UNPACK_ALIGNMENT, 1);
+    gl.TexImage2D(gl::TEXTURE_2D, 0, gl::RGB.try_into().unwrap(),
+                  width,
+                  height,
+                  0,
+                  format,
+                  gl::UNSIGNED_BYTE,
+                  data.as_ptr() as *const _);
+    gl.GenerateMipmap(gl::TEXTURE_2D);
+    id_tex
+}
