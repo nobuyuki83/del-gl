@@ -8,7 +8,7 @@ pub struct Drawer {
 }
 
 impl Drawer {
-    pub unsafe fn compile_shader(&mut self, gl: &gl::Gl) {
+    pub fn compile_shader(&mut self, gl: &gl::Gl) {
         const VS_SRC: &[u8] = b"
 #version 100
 precision mediump float;
@@ -34,15 +34,18 @@ void main() {
     gl_FragColor = vec4(v_color, 1.0);
 }
 \0";
-        self.program = crate::utility::compile_shaders(
-            gl, VS_SRC, FS_SRC);
+        unsafe {
+            self.program = crate::utility::compile_shaders(
+                gl, VS_SRC, FS_SRC);
+        }
     }
 
-    pub unsafe fn initialize(
+    pub fn initialize(
         &self,
         gl: &gl::Gl,
         vtx2xyrgb: &Vec<f32>) {
             let mut vb = 0_u32;
+        unsafe{
             gl.GenBuffers(1, &mut vb);
             gl.BindBuffer(gl::ARRAY_BUFFER, vb);
             gl.BufferData(
@@ -78,12 +81,15 @@ void main() {
             );
             gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
             gl.EnableVertexAttribArray(color_attrib as gl::types::GLuint);
+        }
     }
 
-    pub unsafe fn draw_frame(
+    pub fn draw_frame(
         &self,
         gl: &gl::Gl) {
-        gl.UseProgram(self.program);
-        gl.DrawArrays(self.mode, 0, 3);
+        unsafe {
+            gl.UseProgram(self.program);
+            gl.DrawArrays(self.mode, 0, 3);
+        }
     }
 }

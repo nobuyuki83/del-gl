@@ -77,17 +77,15 @@ void main() {
     }
 }
 \0";
+        use crate::utility::{get_location, compile_shaders};
         unsafe {
-            use crate::utility::{get_location, compile_shaders};
             self.program = compile_shaders(gl, VS_SRC, FS_SRC);
             self.loc_mat_modelview = get_location(gl, "matMV", self.program);
             self.loc_mat_projection = get_location(gl, "matPrj", self.program);
             self.loc_texture = get_location(gl, "myTextureSampler", self.program);
             self.loc_color = get_location(gl, "color", self.program);
             self.loc_is_texture = get_location(gl, "is_texture", self.program);
-        }
 
-        unsafe { // make VAO
             if gl.BindVertexArray.is_loaded() {
                 let mut vao0 = std::mem::zeroed();
                 gl.GenVertexArrays(1, &mut vao0);
@@ -136,7 +134,7 @@ void main() {
         self.num_point = vtx2xyz.len() as i32 / self.ndim;
         unsafe {
             gl.BindVertexArray(self.vao);
-
+            //
             let mut vbo = std::mem::zeroed();
             gl.GenBuffers(1, &mut vbo);
             gl.BindBuffer(gl::ARRAY_BUFFER, vbo);

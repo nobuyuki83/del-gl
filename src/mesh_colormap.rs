@@ -9,14 +9,14 @@ struct ElementBufferObject {
 }
 
 pub struct Drawer {
-    pub color_map: Vec<[f32;3]>,
+    pub color_map: Vec<[f32; 3]>,
     pub val_min: f32,
     pub val_max: f32,
     pub ndim: i32,
     program: gl::types::GLuint,
     vao: gl::types::GLuint,
     // uniform variables
-    loc_mat_modelview : gl::types::GLint,
+    loc_mat_modelview: gl::types::GLint,
     loc_mat_projection: gl::types::GLint,
     loc_val_min: gl::types::GLint,
     loc_val_max: gl::types::GLint,
@@ -27,7 +27,7 @@ pub struct Drawer {
 impl Drawer {
     pub fn new() -> Self {
         Drawer {
-            color_map: Vec::<[f32;3]>::new(),
+            color_map: Vec::<[f32; 3]>::new(),
             val_min: 0.0,
             val_max: 1.0,
             program: 0,
@@ -37,13 +37,14 @@ impl Drawer {
             loc_mat_projection: -1,
             loc_val_min: -1,
             loc_val_max: -1,
-            ebo: ElementBufferObject{
+            ebo: ElementBufferObject {
                 mode: gl::TRIANGLES,
                 elem_size: 0,
                 ebo: 0,
             },
         }
     }
+
     pub fn compile_shader(&mut self, gl: &gl::Gl) {
         const VS_SRC: &[u8] = b"
 #version 330
@@ -69,8 +70,7 @@ void main() {
             for ic in 0..self.color_map.len() {
                 let c = self.color_map[ic];
                 glsl_colormap += &format!(" vec3({},{},{})", c[0], c[1], c[2]);
-                if ic != self.color_map.len()-1 {  glsl_colormap += &",\n";  }
-                else{ glsl_colormap += &");\n"; }
+                if ic != self.color_map.len() - 1 { glsl_colormap += &",\n"; } else { glsl_colormap += &");\n"; }
             }
         }
 
@@ -100,25 +100,22 @@ void main() {
 \0".to_string();
         let fs_src = glsl_header + &glsl_colormap + &glsl_code;
 
+        use crate::utility::{get_location, compile_shaders};
         unsafe {
-            use crate::utility::{get_location, compile_shaders};
             self.program = compile_shaders(gl, VS_SRC, fs_src.as_bytes());
             self.loc_mat_modelview = get_location(gl, "matMV", self.program);
             self.loc_mat_projection = get_location(gl, "matPrj", self.program);
             self.loc_val_min = get_location(gl, "val_min", self.program);
             self.loc_val_max = get_location(gl, "val_max", self.program);
-        }
 
-        unsafe { // make VAO
+            // make VAO
             if gl.BindVertexArray.is_loaded() {
                 let mut vao0 = std::mem::zeroed();
                 gl.GenVertexArrays(1, &mut vao0);
                 self.vao = vao0;
                 gl.BindVertexArray(self.vao);
             }
-        }
 
-        unsafe {  // locate uniform variables, should come after VAO is made
             {
                 let cname = std::ffi::CString::new("matMV").expect("CString::new failed");
                 self.loc_mat_modelview = gl.GetUniformLocation(self.program, cname.as_ptr());
@@ -136,7 +133,6 @@ void main() {
                 self.loc_val_max = gl.GetUniformLocation(self.program, cname.as_ptr());
             }
         }
-
     }
 
     pub fn add_element<T>(
@@ -151,7 +147,7 @@ void main() {
             let mut ebo0 = std::mem::zeroed();
             gl.GenBuffers(1, &mut ebo0);
             gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo0);
-            let elem2vtx0: Vec<GLuint> = elem2vtx.iter().map(|i| (*i).as_() ).collect();
+            let elem2vtx0: Vec<GLuint> = elem2vtx.iter().map(|i| (*i).as_()).collect();
             gl.BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (elem2vtx0.len() * std::mem::size_of::<GLuint>()) as gl::types::GLsizeiptr,
@@ -171,7 +167,7 @@ void main() {
         self.ndim = ndim;
         unsafe {
             gl.BindVertexArray(self.vao);
-
+            //
             let mut vbo = std::mem::zeroed();
             gl.GenBuffers(1, &mut vbo);
             gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
@@ -222,13 +218,13 @@ void main() {
         &self,
         gl: &gl::Gl,
         mat_modelview: &[f32],
-        mat_projection: &[f32]){
+        mat_projection: &[f32]) {
         let mp0 = mat_projection;
-        let mp1: [f32;16] = [ // mp1 = [z flip] * mp0
+        let mp1: [f32; 16] = [ // mp1 = [z flip] * mp0
             mp0[0], mp0[1], -mp0[2], mp0[3],
             mp0[4], mp0[5], -mp0[6], mp0[7],
             mp0[8], mp0[9], -mp0[10], mp0[11],
-            mp0[12], mp0[13], -mp0[14], mp0[15] ];
+            mp0[12], mp0[13], -mp0[14], mp0[15]];
         unsafe {
             gl.UseProgram(self.program);
             gl.BindVertexArray(self.vao);

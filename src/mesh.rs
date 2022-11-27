@@ -35,7 +35,7 @@ impl Drawer {
             ebos: Vec::<ElementBufferObject>::new(),
         }
     }
-    pub unsafe fn compile_shader(&mut self, gl: &gl::Gl) {
+    pub fn compile_shader(&mut self, gl: &gl::Gl) {
         const VS_SRC: &[u8] = b"
 #version 330
 
@@ -63,20 +63,21 @@ void main() {
 \0";
 
         use crate::utility::{get_location, compile_shaders};
-        self.program = compile_shaders(gl, VS_SRC, FS_SRC);
-        self.loc_mat_modelview = get_location(gl, "matMV", self.program);
-        self.loc_mat_projection = get_location(gl, "matPrj", self.program);
-        self.loc_color = get_location(gl, "color", self.program);
-
-        if gl.BindVertexArray.is_loaded() {
-            let mut vao0 = std::mem::zeroed();
-            gl.GenVertexArrays(1, &mut vao0);
-            self.vao = vao0;
-            gl.BindVertexArray(self.vao);
+        unsafe {
+            self.program = compile_shaders(gl, VS_SRC, FS_SRC);
+            self.loc_mat_modelview = get_location(gl, "matMV", self.program);
+            self.loc_mat_projection = get_location(gl, "matPrj", self.program);
+            self.loc_color = get_location(gl, "color", self.program);
+            if gl.BindVertexArray.is_loaded() {
+                let mut vao0 = std::mem::zeroed();
+                gl.GenVertexArrays(1, &mut vao0);
+                self.vao = vao0;
+                gl.BindVertexArray(self.vao);
+            }
         }
     }
 
-    pub unsafe fn add_element<T>(
+    pub fn add_element<T>(
         &mut self,
         gl: &gl::Gl,
         mode: gl::types::GLenum,
@@ -86,53 +87,56 @@ void main() {
     {
         use crate::gl::types::GLuint;
         let elem2vtx0: Vec<GLuint> = elem2vtx.iter().map(|i| (*i).as_()).collect();
-        gl.BindVertexArray(self.vao);
-        let mut ebo0 = 0_u32;
-        gl.GenBuffers(1, &mut ebo0);
-        gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo0);
-        // println!("{:?}", (elem2vtx0.len() * std::mem::size_of::<usize>()) as gl::types::GLsizeiptr);
-        // println!("{:?}", elem2vtx0.as_ptr() as *const _);
-        gl.BufferData(
-            gl::ELEMENT_ARRAY_BUFFER,
-            (elem2vtx0.len() * std::mem::size_of::<GLuint>()) as gl::types::GLsizeiptr,
-            elem2vtx0.as_ptr() as *const _,
-            gl::STATIC_DRAW);
-        self.ebos.push(
-            ElementBufferObject {
-                mode: mode,
-                elem_size: elem2vtx0.len(),
-                ebo: ebo0,
-                color: color,
-            });
+        unsafe {
+            gl.BindVertexArray(self.vao);
+            let mut ebo0 = 0_u32;
+            gl.GenBuffers(1, &mut ebo0);
+            gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo0);
+            // println!("{:?}", (elem2vtx0.len() * std::mem::size_of::<usize>()) as gl::types::GLsizeiptr);
+            // println!("{:?}", elem2vtx0.as_ptr() as *const _);
+            gl.BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (elem2vtx0.len() * std::mem::size_of::<GLuint>()) as gl::types::GLsizeiptr,
+                elem2vtx0.as_ptr() as *const _,
+                gl::STATIC_DRAW);
+            self.ebos.push(
+                ElementBufferObject {
+                    mode: mode,
+                    elem_size: elem2vtx0.len(),
+                    ebo: ebo0,
+                    color: color,
+                });
+        }
     }
 
-    pub unsafe fn update_vertex(
+    pub fn update_vertex(
         &mut self,
         gl: &gl::Gl,
         vtx_xyz: &Vec<f32>,
         ndim: i32) {
         self.ndim = ndim;
         self.num_point = vtx_xyz.len() as i32 / self.ndim;
-        gl.BindVertexArray(self.vao);
-
-        let mut vbo = std::mem::zeroed();
-        gl.GenBuffers(1, &mut vbo);
-        gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl.BufferData(
-            gl::ARRAY_BUFFER,
-            (vtx_xyz.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-            vtx_xyz.as_ptr() as *const _,
-            gl::STATIC_DRAW);
-
-        let pos_attrib = gl.GetAttribLocation(self.program, b"position\0".as_ptr() as *const _);
-        gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
-        gl.VertexAttribPointer(
-            pos_attrib as gl::types::GLuint,
-            self.ndim,
-            gl::FLOAT,
-            0,
-            self.ndim * std::mem::size_of::<f32>() as gl::types::GLsizei,
-            std::ptr::null());
+        unsafe {
+            gl.BindVertexArray(self.vao);
+            let mut vbo = std::mem::zeroed();
+            gl.GenBuffers(1, &mut vbo);
+            gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
+            gl.BufferData(
+                gl::ARRAY_BUFFER,
+                (vtx_xyz.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                vtx_xyz.as_ptr() as *const _,
+                gl::STATIC_DRAW);
+            //
+            let pos_attrib = gl.GetAttribLocation(self.program, b"position\0".as_ptr() as *const _);
+            gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
+            gl.VertexAttribPointer(
+                pos_attrib as gl::types::GLuint,
+                self.ndim,
+                gl::FLOAT,
+                0,
+                self.ndim * std::mem::size_of::<f32>() as gl::types::GLsizei,
+                std::ptr::null());
+        }
     }
 
     pub fn draw(
