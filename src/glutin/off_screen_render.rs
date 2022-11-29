@@ -5,8 +5,10 @@ use crate::gl;
 
 pub struct OffScreenRender {
     pub gl: gl::Gles2,
+    pub el: glutin::event_loop::EventLoop<()>,
     pub width: u32,
-    pub height: u32
+    pub height: u32,
+    pub background_color: [f32; 3]
 }
 
 impl OffScreenRender {
@@ -19,34 +21,40 @@ impl OffScreenRender {
         OffScreenRender {
             width: width,
             height: height,
-            gl: gl
+            gl: gl,
+            el: el,
+            background_color: [0.8, 1.0, 1.0]
         }
     }
 
-    pub unsafe fn start(&self) {
+    pub fn start(&self) {
         let mut fbo: gl::types::GLuint = 0;// fbo, render_buf;
         let mut render_buf: gl::types::GLuint = 0;
         let gl = &self.gl;
-        gl.Viewport(0, 0, self.width as _, self.height as _);
-        gl.GenFramebuffers(1, &mut fbo);
-        gl.BindFramebuffer(gl::FRAMEBUFFER, fbo);
-        //
-        gl.GenRenderbuffers(1, &mut render_buf);
-        gl.BindRenderbuffer(gl::RENDERBUFFER, render_buf);
-        gl.RenderbufferStorage(gl::RENDERBUFFER, gl::RGB, self.width as _, self.height as _);
-        gl.BindRenderbuffer(gl::RENDERBUFFER, 0);
-        //
-        gl.FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::RENDERBUFFER, render_buf);
-        gl.ClearColor(0.8, 0.8, 1.0, 1.0);
-        gl.Clear(gl::COLOR_BUFFER_BIT);
+        unsafe {
+            gl.Viewport(0, 0, self.width as _, self.height as _);
+            gl.GenFramebuffers(1, &mut fbo);
+            gl.BindFramebuffer(gl::FRAMEBUFFER, fbo);
+            //
+            gl.GenRenderbuffers(1, &mut render_buf);
+            gl.BindRenderbuffer(gl::RENDERBUFFER, render_buf);
+            gl.RenderbufferStorage(gl::RENDERBUFFER, gl::RGB, self.width as _, self.height as _);
+            gl.BindRenderbuffer(gl::RENDERBUFFER, 0);
+            //
+            gl.FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::RENDERBUFFER, render_buf);
+            gl.ClearColor(self.background_color[0], self.background_color[1], self.background_color[2], 1.0);
+            gl.Clear(gl::COLOR_BUFFER_BIT);
+        }
     }
 
-    pub unsafe fn save(&self) -> Vec<u8> {
+    pub fn save(&self) -> Vec<u8> {
         let mut data = vec!(0_u8; (self.width * self.height * 3) as _);
-        self.gl.ReadBuffer(gl::COLOR_ATTACHMENT0);
-        self.gl.ReadPixels(
-            0, 0, self.width as _, self.height as _, gl::RGB, gl::UNSIGNED_BYTE,
-            data.as_mut_ptr() as *mut std::ffi::c_void);
+        unsafe {
+            self.gl.ReadBuffer(gl::COLOR_ATTACHMENT0);
+            self.gl.ReadPixels(
+                0, 0, self.width as _, self.height as _, gl::RGB, gl::UNSIGNED_BYTE,
+                data.as_mut_ptr() as *mut std::ffi::c_void);
+        }
         data
     }
 }

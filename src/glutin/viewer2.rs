@@ -4,7 +4,6 @@ use crate::gl;
 
 use glutin::event::{ElementState, Event, MouseButton, WindowEvent};
 use glutin::event_loop::EventLoop;
-use glutin::window::WindowBuilder;
 use glutin::{ContextBuilder, ContextWrapper, PossiblyCurrent};
 
 use crate::nalgebra::view_navigation2::Navigation2;
@@ -22,23 +21,12 @@ pub struct Viewer2 {
 }
 
 impl Viewer2 {
-    pub fn open() -> (Self, EventLoop<()>) {
+    pub fn open_with_builder(wb: glutin::window::WindowBuilder) -> (Self, EventLoop<()>) {
         let el = EventLoop::new();
-        let wb = WindowBuilder::new().with_title("A fantastic window!");
         let wc0 = ContextBuilder::new().build_windowed(wb, &el).unwrap();
         let windowed_context = unsafe { wc0.make_current().unwrap() };
-        println!("Pixel format of the window's GL context: {:?}", windowed_context.get_pixel_format());
 
         let gl = gl::Gl::load_with(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
-
-        {
-            let version = unsafe {
-                let data = std::ffi::CStr::from_ptr(gl.GetString(gl::VERSION) as *const _)
-                    .to_bytes().to_vec();
-                String::from_utf8(data).unwrap()
-            };
-            println!("OpenGL version {}", version);
-        }
 
         (Viewer2 {
             windowed_context: windowed_context,
@@ -51,6 +39,22 @@ impl Viewer2 {
             is_left_btn_down_not_for_view_ctrl: false
         },
          el)
+    }
+
+    pub fn open() ->  (Self, EventLoop<()>) {
+        let wb =  glutin::window::WindowBuilder::new()
+            .with_title("A fantastic window!")
+            .with_inner_size(glutin::dpi::LogicalSize::new(400.,300.));
+        Viewer2::open_with_builder(wb)
+    }
+
+    pub fn get_opengl_version(&self) -> String {
+        let version = unsafe {
+            let data = std::ffi::CStr::from_ptr(self.gl.GetString(gl::VERSION) as *const _)
+                .to_bytes().to_vec();
+            String::from_utf8(data).unwrap()
+        };
+        version
     }
 
     pub fn event_handle(&mut self, event:&Event<()>) {
