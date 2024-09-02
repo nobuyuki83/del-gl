@@ -1,4 +1,3 @@
-
 pub struct UiState {
     pub cursor_x: f64,
     pub cursor_y: f64,
@@ -8,9 +7,8 @@ pub struct UiState {
     pub win_width: u32,
     pub is_left_btn: bool,
     pub is_mod_alt: bool,
-    pub is_mod_shift: bool
+    pub is_mod_shift: bool,
 }
-
 
 impl UiState {
     pub fn new() -> Self {

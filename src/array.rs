@@ -41,7 +41,7 @@ void main() {
     // gl_FragColor = vec4(0., 1., 0., 1.0);
 }
 \0";
-        use crate::utility::{get_location, compile_shaders};
+        use crate::utility::{compile_shaders, get_location};
         unsafe {
             self.program = compile_shaders(gl, VS_SRC, FS_SRC);
             self.loc_mat_modelview = get_location(gl, "matMV", self.program);
@@ -50,10 +50,7 @@ void main() {
         }
     }
 
-    pub fn initialize(
-        &mut self,
-        gl: &gl::Gl,
-        vtx2xyz: &Vec<f32>) {
+    pub fn initialize(&mut self, gl: &gl::Gl, vtx2xyz: &Vec<f32>) {
         unsafe {
             let mut vb = 0;
             gl.GenBuffers(1, &mut vb);
@@ -84,17 +81,13 @@ void main() {
         }
     }
 
-    pub fn draw_frame(
-        &self,
-        gl: &gl::Gl,
-        mat_modelview: &[f32],
-        mat_projection: &[f32]) {
+    pub fn draw_frame(&self, gl: &gl::Gl, mat_modelview: &[f32], mat_projection: &[f32]) {
         let mp0 = mat_projection;
-        let mp1: [f32; 16] = [ // mp1 = [z flip] * mp0
-            mp0[0], mp0[1], -mp0[2], mp0[3],
-            mp0[4], mp0[5], -mp0[6], mp0[7],
-            mp0[8], mp0[9], -mp0[10], mp0[11],
-            mp0[12], mp0[13], -mp0[14], mp0[15]];
+        let mp1: [f32; 16] = [
+            // mp1 = [z flip] * mp0
+            mp0[0], mp0[1], -mp0[2], mp0[3], mp0[4], mp0[5], -mp0[6], mp0[7], mp0[8], mp0[9],
+            -mp0[10], mp0[11], mp0[12], mp0[13], -mp0[14], mp0[15],
+        ];
         unsafe {
             gl.UseProgram(self.program);
             gl.BindVertexArray(self.vao);

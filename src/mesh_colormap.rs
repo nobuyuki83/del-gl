@@ -70,13 +70,18 @@ void main() {
             for ic in 0..self.color_map.len() {
                 let c = self.color_map[ic];
                 glsl_colormap += &format!(" vec3({},{},{})", c[0], c[1], c[2]);
-                if ic != self.color_map.len() - 1 { glsl_colormap += &",\n"; } else { glsl_colormap += &");\n"; }
+                if ic != self.color_map.len() - 1 {
+                    glsl_colormap += &",\n";
+                } else {
+                    glsl_colormap += &");\n";
+                }
             }
         }
 
         let glsl_header: String = "
 #version 330
-".to_string();
+"
+        .to_string();
 
         let glsl_code: String = "
 uniform vec3 color;
@@ -97,10 +102,11 @@ void main() {
     FragColor = vec4(clr01.x, clr01.y, clr01.z, 1.0f);
     // FragColor = vec4(color, 1.0);
 }
-\0".to_string();
+\0"
+        .to_string();
         let fs_src = glsl_header + &glsl_colormap + &glsl_code;
 
-        use crate::utility::{get_location, compile_shaders};
+        use crate::utility::{compile_shaders, get_location};
         unsafe {
             self.program = compile_shaders(gl, VS_SRC, fs_src.as_bytes());
             self.loc_mat_modelview = get_location(gl, "matMV", self.program);
@@ -135,12 +141,10 @@ void main() {
         }
     }
 
-    pub fn add_element<T>(
-        &mut self,
-        gl: &gl::Gl,
-        mode: gl::types::GLenum,
-        elem2vtx: &Vec<T>)
-        where T: 'static + Copy + num_traits::AsPrimitive<gl::types::GLuint> {
+    pub fn add_element<T>(&mut self, gl: &gl::Gl, mode: gl::types::GLenum, elem2vtx: &Vec<T>)
+    where
+        T: 'static + Copy + num_traits::AsPrimitive<gl::types::GLuint>,
+    {
         use crate::gl::types::GLuint;
         unsafe {
             gl.BindVertexArray(self.vao);
@@ -152,18 +156,15 @@ void main() {
                 gl::ELEMENT_ARRAY_BUFFER,
                 (elem2vtx0.len() * std::mem::size_of::<GLuint>()) as gl::types::GLsizeiptr,
                 elem2vtx0.as_ptr() as *const _,
-                gl::STATIC_DRAW);
+                gl::STATIC_DRAW,
+            );
             self.ebo.mode = mode;
             self.ebo.elem_size = elem2vtx0.len();
             self.ebo.ebo = ebo0;
         }
     }
 
-    pub fn update_vertex(
-        &mut self,
-        gl: &gl::Gl,
-        vtx_xyz: &Vec<f32>,
-        ndim: i32) {
+    pub fn update_vertex(&mut self, gl: &gl::Gl, vtx_xyz: &Vec<f32>, ndim: i32) {
         self.ndim = ndim;
         unsafe {
             gl.BindVertexArray(self.vao);
@@ -175,7 +176,8 @@ void main() {
                 gl::ARRAY_BUFFER,
                 (vtx_xyz.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
                 vtx_xyz.as_ptr() as *const _,
-                gl::STATIC_DRAW);
+                gl::STATIC_DRAW,
+            );
             let pos_attrib = gl.GetAttribLocation(self.program, b"position\0".as_ptr() as *const _);
             gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
             gl.VertexAttribPointer(
@@ -184,14 +186,12 @@ void main() {
                 gl::FLOAT,
                 0,
                 self.ndim * std::mem::size_of::<f32>() as gl::types::GLsizei,
-                std::ptr::null());
+                std::ptr::null(),
+            );
         }
     }
 
-    pub fn update_value(
-        &mut self,
-        gl: &gl::Gl,
-        vtx_val: &Vec<f32>) {
+    pub fn update_value(&mut self, gl: &gl::Gl, vtx_val: &Vec<f32>) {
         unsafe {
             gl.BindVertexArray(self.vao);
             let mut vbo = std::mem::zeroed();
@@ -201,7 +201,8 @@ void main() {
                 gl::ARRAY_BUFFER,
                 (vtx_val.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
                 vtx_val.as_ptr() as *const _,
-                gl::STATIC_DRAW);
+                gl::STATIC_DRAW,
+            );
             let val_attrib = gl.GetAttribLocation(self.program, b"value\0".as_ptr() as *const _);
             gl.EnableVertexAttribArray(val_attrib as gl::types::GLuint);
             gl.VertexAttribPointer(
@@ -210,21 +211,18 @@ void main() {
                 gl::FLOAT,
                 0,
                 1 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-                std::ptr::null());
+                std::ptr::null(),
+            );
         }
     }
 
-    pub fn draw(
-        &self,
-        gl: &gl::Gl,
-        mat_modelview: &[f32],
-        mat_projection: &[f32]) {
+    pub fn draw(&self, gl: &gl::Gl, mat_modelview: &[f32], mat_projection: &[f32]) {
         let mp0 = mat_projection;
-        let mp1: [f32; 16] = [ // mp1 = [z flip] * mp0
-            mp0[0], mp0[1], -mp0[2], mp0[3],
-            mp0[4], mp0[5], -mp0[6], mp0[7],
-            mp0[8], mp0[9], -mp0[10], mp0[11],
-            mp0[12], mp0[13], -mp0[14], mp0[15]];
+        let mp1: [f32; 16] = [
+            // mp1 = [z flip] * mp0
+            mp0[0], mp0[1], -mp0[2], mp0[3], mp0[4], mp0[5], -mp0[6], mp0[7], mp0[8], mp0[9],
+            -mp0[10], mp0[11], mp0[12], mp0[13], -mp0[14], mp0[15],
+        ];
         unsafe {
             gl.UseProgram(self.program);
             gl.BindVertexArray(self.vao);
@@ -233,10 +231,12 @@ void main() {
             gl.Uniform1f(self.loc_val_min, self.val_min);
             gl.Uniform1f(self.loc_val_max, self.val_max);
             gl.BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ebo.ebo);
-            gl.DrawElements(self.ebo.mode,
-                            self.ebo.elem_size as i32,
-                            gl::UNSIGNED_INT,
-                            std::ptr::null());
+            gl.DrawElements(
+                self.ebo.mode,
+                self.ebo.elem_size as i32,
+                gl::UNSIGNED_INT,
+                std::ptr::null(),
+            );
         }
     }
 }

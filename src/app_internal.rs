@@ -37,12 +37,12 @@ pub fn gl_config_picker(configs: Box<dyn Iterator<Item = Config> + '_>) -> Confi
         .unwrap()
 }
 
-struct AppState {
-    gl_context: PossiblyCurrentContext,
-    gl_surface: Surface<WindowSurface>,
+pub struct AppState {
+    pub gl_context: PossiblyCurrentContext,
+    pub gl_surface: Surface<WindowSurface>,
     // NOTE: Window should be dropped after all resources created using its
     // raw-window-handle.
-    window: Window,
+    pub window: Window,
 }
 
 pub struct AppInternal {
@@ -51,11 +51,11 @@ pub struct AppInternal {
     pub exit_state: Result<(), Box<dyn Error>>,
     not_current_gl_context: Option<NotCurrentContext>,
     // NOTE: `AppState` carries the `Window`, thus it should be dropped after everything else.
-    state: Option<AppState>,
+    pub state: Option<AppState>,
 }
 
 impl AppInternal {
-    fn new(template: ConfigTemplateBuilder, display_builder: DisplayBuilder) -> Self {
+    pub fn new(template: ConfigTemplateBuilder, display_builder: DisplayBuilder) -> Self {
         Self {
             template,
             display_builder,
@@ -65,7 +65,10 @@ impl AppInternal {
         }
     }
 
-    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) -> Option<(AppState)> {
+    pub fn resumed(
+        &mut self,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+    ) -> Option<(AppState)> {
         let (mut window, gl_config) = match self.display_builder.clone().build(
             event_loop,
             self.template.clone(),
@@ -154,10 +157,16 @@ impl AppInternal {
         {
             eprintln!("Error setting vsync: {res:?}");
         }
-        Some((AppState {gl_context, gl_surface, window}))
+        Some(
+            (AppState {
+                gl_context,
+                gl_surface,
+                window,
+            }),
+        )
     }
 
-    fn suspended(&mut self) {
+    pub fn suspended(&mut self) {
         // Destroy the GL Surface and un-current the GL Context before ndk-glue releases
         // the window back to the system.
         let gl_context = self.state.take().unwrap().gl_context;
@@ -169,108 +178,3 @@ impl AppInternal {
 }
 
 // ---------------
-
-pub trait Renderer {
-    fn new<D: GlDisplay>(gl_display: &D) -> Self;
-    fn draw(&self);
-    fn resize(&self, width: i32, height: i32);
-    fn init_gl(&mut self);
-}
-
-pub struct App<Rndr> {
-    pub appi: AppInternal,
-    pub renderer: Option<Rndr>,
-}
-
-impl<Rndr> App<Rndr> {
-    pub fn new(template: ConfigTemplateBuilder, display_builder: DisplayBuilder) -> Self {
-        Self {
-            appi: AppInternal::new(template, display_builder),
-            renderer: None,
-        }
-    }
-}
-
-impl<Rndr: Renderer> ApplicationHandler for App<Rndr> {
-    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let Some(app_state) = self.appi.resumed(event_loop)else { return; };
-        // The context needs to be current for the Renderer to set up shaders and
-        // buffers. It also performs function loading, which needs a current context on
-        // WGL.
-        self.renderer
-            .get_or_insert_with(|| {
-                let mut render: Rndr = Renderer::new(&app_state.gl_context.display());
-                render.init_gl();
-                render
-            });
-
-        assert!(self
-            .appi.state
-            .replace(app_state)
-            .is_none());
-    }
-
-    fn suspended(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
-        // This event is only raised on Android, where the backing NativeWindow for a GL
-        // Surface can appear and disappear at any moment.
-        println!("Android window removed");
-        self.appi.suspended();
-    }
-
-    fn window_event(
-        &mut self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-        _window_id: winit::window::WindowId,
-        event: WindowEvent,
-    ) {
-        match event {
-            WindowEvent::Resized(size) if size.width != 0 && size.height != 0 => {
-                // Some platforms like EGL require resizing GL surface to update the size
-                // Notable platforms here are Wayland and macOS, other don't require it
-                // and the function is no-op, but it's wise to resize it for portability
-                // reasons.
-                if let Some(AppState {
-                                gl_context,
-                                gl_surface,
-                                window: _,
-                            }) = self.appi.state.as_ref()
-                {
-                    gl_surface.resize(
-                        gl_context,
-                        NonZeroU32::new(size.width).unwrap(),
-                        NonZeroU32::new(size.height).unwrap(),
-                    );
-                    let renderer = self.renderer.as_ref().unwrap();
-                    renderer.resize(size.width as i32, size.height as i32);
-                }
-            }
-            WindowEvent::CloseRequested
-            | WindowEvent::KeyboardInput {
-                event:
-                KeyEvent {
-                    logical_key: Key::Named(NamedKey::Escape),
-                    ..
-                },
-                ..
-            } => event_loop.exit(),
-            _ => (),
-        }
-    }
-
-    fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
-        if let Some(AppState {
-                        gl_context,
-                        gl_surface,
-                        window,
-                    }) = self.appi.state.as_ref()
-        {
-            let renderer = self.renderer.as_ref().unwrap();
-            renderer.draw();
-            window.request_redraw();
-            gl_surface.swap_buffers(gl_context).unwrap();
-        }
-    }
-}
-
-
-
