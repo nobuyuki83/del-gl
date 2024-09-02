@@ -1,15 +1,3 @@
-use std::error::Error;
-use std::ffi::{CStr, CString};
-use std::num::NonZeroU32;
-use std::ops::Deref;
-
-use crate::gl::types::GLfloat;
-use raw_window_handle::HasWindowHandle;
-use winit::application::ApplicationHandler;
-use winit::event::{KeyEvent, WindowEvent};
-use winit::keyboard::{Key, NamedKey};
-use winit::window::Window;
-
 use glutin::config::{Config, ConfigTemplateBuilder};
 use glutin::context::{
     ContextApi, ContextAttributesBuilder, NotCurrentContext, PossiblyCurrentContext, Version,
@@ -17,6 +5,10 @@ use glutin::context::{
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::{Surface, SwapInterval, WindowSurface};
+use raw_window_handle::HasWindowHandle;
+use std::error::Error;
+use std::num::NonZeroU32;
+use winit::window::Window;
 
 use glutin_winit::{DisplayBuilder, GlWindow};
 
@@ -65,10 +57,7 @@ impl AppInternal {
         }
     }
 
-    pub fn resumed(
-        &mut self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-    ) -> Option<(AppState)> {
+    pub fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) -> Option<AppState> {
         let (mut window, gl_config) = match self.display_builder.clone().build(
             event_loop,
             self.template.clone(),
@@ -157,13 +146,11 @@ impl AppInternal {
         {
             eprintln!("Error setting vsync: {res:?}");
         }
-        Some(
-            (AppState {
-                gl_context,
-                gl_surface,
-                window,
-            }),
-        )
+        Some(AppState {
+            gl_context,
+            gl_surface,
+            window,
+        })
     }
 
     pub fn suspended(&mut self) {

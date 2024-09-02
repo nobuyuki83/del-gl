@@ -1,6 +1,3 @@
-use del_gl::gl::types::GLfloat;
-use del_gl::renderer::Renderer;
-use del_gl::{app_internal, gl};
 use glutin::config::ConfigTemplateBuilder;
 use glutin::display::GetGlDisplay;
 use glutin::display::GlDisplay;
@@ -16,6 +13,9 @@ use winit::event::{KeyEvent, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::Window;
+//
+use del_gl::gl::types::GLfloat;
+use del_gl::{app_internal, gl};
 
 const VERTEX_SHADER_SOURCE: &[u8] = b"
 #version 330

@@ -44,8 +44,8 @@ pub unsafe fn create_shader(
 
 pub fn set_shader_program(
     gl: &gl::Gl,
-    VERTEX_SHADER_SOURCE: &[u8],
-    FRAGMENT_SHADER_SOURCE: &[u8],
+    vertex_shader_source: &[u8],
+    fragment_shader_source: &[u8],
 ) -> gl::types::GLuint {
     if let Some(renderer) = get_gl_string(&gl, gl::RENDERER) {
         println!("Running on {}", renderer.to_string_lossy());
@@ -58,18 +58,13 @@ pub fn set_shader_program(
         println!("Shaders version on {}", shaders_version.to_string_lossy());
     }
     unsafe {
-        let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, VERTEX_SHADER_SOURCE);
-        let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE);
-
+        let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, vertex_shader_source);
+        let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, fragment_shader_source);
         let program = gl.CreateProgram();
-
         gl.AttachShader(program, vertex_shader);
         gl.AttachShader(program, fragment_shader);
-
         gl.LinkProgram(program);
-
         gl.UseProgram(program);
-
         gl.DeleteShader(vertex_shader);
         gl.DeleteShader(fragment_shader);
         program

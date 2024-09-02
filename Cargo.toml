@@ -14,11 +14,13 @@ description = "OpenGL utility library in Rust language."
 glutin = "0.32.0"
 glutin-winit = "0.5.0"
 winit = "0.30.5"
-raw-window-handle = "0.6"
+raw-window-handle = "0.6.2"
 image = "0.25.2"
-
 num-traits = "0.2.19"
-nalgebra = "*"
+nalgebra = "0.33.0"
+#
+del-msh-core = {path = "../del-msh/del-msh-core"}
+del-geo-core = {path = "../del-geo/del-geo-core"}
 
 [build-dependencies]
 gl_generator = "0.14.0"
