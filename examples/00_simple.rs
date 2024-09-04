@@ -3,43 +3,35 @@ use glutin::display::GetGlDisplay;
 use glutin::display::GlDisplay;
 use glutin::prelude::GlSurface;
 use glutin_winit::DisplayBuilder;
-use std::error::Error;
-use std::ffi::CString;
-use std::num::NonZeroU32;
-use std::ops::Deref;
-use std::ptr::NonNull;
 use winit::application::ApplicationHandler;
-use winit::event::{KeyEvent, WindowEvent};
+use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::Window;
 //
-use del_gl::gl::types::GLfloat;
 use del_gl::{app_internal, gl};
 
 const VERTEX_SHADER_SOURCE: &[u8] = b"
 #version 330
-precision mediump float;
 
-layout(location=0) in vec2 position;
-layout(location=1) in vec3 color;
-
+in vec2 xyzIn;
+in vec3 rgbIn;
 out vec3 v_color;
 
 void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-    v_color = color;
+    gl_Position = vec4(xyzIn, 0.0, 1.0);
+    v_color = rgbIn;
 }
 \0";
 
 const FRAGMENT_SHADER_SOURCE: &[u8] = b"
 #version 330
-precision mediump float;
 
 in vec3 v_color;
+out vec4 FragColor;
 
 void main() {
-    gl_FragColor = vec4(v_color, 1.0);
+    FragColor = vec4(v_color, 1.0);
 }
 \0";
 
@@ -52,17 +44,15 @@ pub struct MyRenderer {
 
 impl MyRenderer {
     fn new<D: GlDisplay>(gl_display: &D) -> Self {
-        unsafe {
-            let gl = gl::Gl::load_with(|symbol| {
-                let symbol = CString::new(symbol).unwrap();
-                gl_display.get_proc_address(symbol.as_c_str()).cast()
-            });
-            Self {
-                program: 0,
-                vao: 0,
-                vbo: 0,
-                gl,
-            }
+        let gl = gl::Gl::load_with(|symbol| {
+            let symbol = std::ffi::CString::new(symbol).unwrap();
+            gl_display.get_proc_address(symbol.as_c_str()).cast()
+        });
+        Self {
+            program: 0,
+            vao: 0,
+            vbo: 0,
+            gl,
         }
     }
 
@@ -71,20 +61,20 @@ impl MyRenderer {
         unsafe {
             self.program =
                 del_gl::set_shader_program(&gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
-
             self.vao = std::mem::zeroed();
             gl.GenVertexArrays(1, &mut self.vao);
             gl.BindVertexArray(self.vao);
-
+            //
             self.vbo = std::mem::zeroed();
             gl.GenBuffers(1, &mut self.vbo);
             gl.BindBuffer(gl::ARRAY_BUFFER, self.vbo);
-            gl.BufferData(gl::ARRAY_BUFFER, 0, 0 as *const _, gl::STATIC_DRAW);
-
-            let pos_attrib = gl.GetAttribLocation(self.program, b"position\0".as_ptr() as *const _);
-            let color_attrib = gl.GetAttribLocation(self.program, b"color\0".as_ptr() as *const _);
+            //
+            let loc_xyz = gl.GetAttribLocation(self.program, b"xyzIn\0".as_ptr() as *const _);
+            let loc_rgb = gl.GetAttribLocation(self.program, b"rgbIn\0".as_ptr() as *const _);
+            assert_ne!(loc_xyz, -1);
+            assert_ne!(loc_rgb, -1);
             gl.VertexAttribPointer(
-                pos_attrib as gl::types::GLuint,
+                loc_xyz as gl::types::GLuint,
                 2,
                 gl::FLOAT,
                 0,
@@ -92,25 +82,26 @@ impl MyRenderer {
                 std::ptr::null(),
             );
             gl.VertexAttribPointer(
-                color_attrib as gl::types::GLuint,
+                loc_rgb as gl::types::GLuint,
                 3,
                 gl::FLOAT,
                 0,
                 5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
                 (2 * std::mem::size_of::<f32>()) as *const () as *const _,
             );
-            gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
-            gl.EnableVertexAttribArray(color_attrib as gl::types::GLuint);
+            gl.EnableVertexAttribArray(loc_xyz as gl::types::GLuint);
+            gl.EnableVertexAttribArray(loc_rgb as gl::types::GLuint);
         }
     }
 
     fn draw(&self) {
         unsafe {
+            self.gl.ClearColor(0.9, 0.9, 1.0, 1.0);
+            self.gl.Clear(gl::COLOR_BUFFER_BIT);
+            //
             self.gl.UseProgram(self.program);
             self.gl.BindVertexArray(self.vao);
             self.gl.BindBuffer(gl::ARRAY_BUFFER, self.vbo);
-            self.gl.ClearColor(0.9, 0.9, 1.0, 1.0);
-            self.gl.Clear(gl::COLOR_BUFFER_BIT);
             self.gl.DrawArrays(gl::TRIANGLES, 0, 3);
         }
     }
@@ -122,7 +113,7 @@ impl MyRenderer {
     }
 }
 
-impl Deref for MyRenderer {
+impl std::ops::Deref for MyRenderer {
     type Target = gl::Gl;
     fn deref(&self) -> &Self::Target {
         &self.gl
@@ -175,6 +166,8 @@ impl ApplicationHandler for MyApp {
                 0.5, -0.5,  0.0,  0.0,  1.0,
             ];
             if let Some(rndr) = &self.renderer {
+                let gl = &rndr.gl;
+                // gl.BufferData(gl::ARRAY_BUFFER, 0, 0 as *const _, gl::STATIC_DRAW);
                 rndr.gl.BufferData(
                     gl::ARRAY_BUFFER,
                     (VERTEX_DATA.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
@@ -183,7 +176,6 @@ impl ApplicationHandler for MyApp {
                 );
             }
         }
-
         assert!(self.appi.state.replace(app_state).is_none());
     }
 
@@ -214,8 +206,8 @@ impl ApplicationHandler for MyApp {
                 {
                     gl_surface.resize(
                         gl_context,
-                        NonZeroU32::new(size.width).unwrap(),
-                        NonZeroU32::new(size.height).unwrap(),
+                        std::num::NonZeroU32::new(size.width).unwrap(),
+                        std::num::NonZeroU32::new(size.height).unwrap(),
                     );
                     let renderer = self.renderer.as_ref().unwrap();
                     renderer.resize(size.width as i32, size.height as i32);
@@ -249,14 +241,16 @@ impl ApplicationHandler for MyApp {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let window_attributes = Window::default_attributes()
-        .with_transparent(false)
-        .with_title("Glutin triangle gradient example (press Escape to exit)");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let template = ConfigTemplateBuilder::new()
         .with_alpha_size(8)
         .with_transparency(cfg!(cgl_backend));
-    let display_builder = DisplayBuilder::new().with_window_attributes(Some(window_attributes));
+    let display_builder = {
+        let window_attributes = Window::default_attributes()
+            .with_transparent(true)
+            .with_title("00_simple");
+        DisplayBuilder::new().with_window_attributes(Some(window_attributes))
+    };
     let mut app = MyApp::new(template, display_builder);
     let event_loop = EventLoop::new().unwrap();
     event_loop.run_app(&mut app)?;

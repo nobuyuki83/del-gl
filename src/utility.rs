@@ -45,13 +45,22 @@ pub unsafe fn compile_shaders(
     id_program
 }
 
-pub unsafe fn get_location(
+pub unsafe fn get_uniform_location(
     gl: &gl::Gl,
     name: &str,
     id_program: gl::types::GLuint,
 ) -> gl::types::GLint {
     let cname = std::ffi::CString::new(name).expect("CString::new failed");
     gl.GetUniformLocation(id_program, cname.as_ptr())
+}
+
+pub unsafe fn get_attrib_location(
+    gl: &gl::Gl,
+    name: &str,
+    id_program: gl::types::GLuint,
+) -> gl::types::GLint {
+    let cname = std::ffi::CString::new(name).expect("CString::new failed");
+    gl.GetAttribLocation(id_program, cname.as_ptr())
 }
 
 pub unsafe fn gen_texture(

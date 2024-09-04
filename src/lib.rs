@@ -1,3 +1,4 @@
+use crate::gl::types::GLsizei;
 use std::ffi::CStr;
 
 pub mod view_ui_state;
@@ -39,6 +40,24 @@ pub unsafe fn create_shader(
         std::ptr::null(),
     );
     gl.CompileShader(shader);
+    {
+        // show error message if fails
+        let mut success: gl::types::GLint = 0;
+        gl.GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
+        if success != 1 {
+            let mut info_log = [0i8; 512];
+            let mut size: GLsizei = 0;
+            gl.GetShaderInfoLog(shader, 512, &mut size, info_log.as_mut_ptr());
+            let info_log: Vec<u8> = info_log
+                .iter()
+                .take_while(|&v| *v != 0)
+                .map(|&v| v as u8)
+                .collect();
+            let a = std::str::from_utf8(&info_log).unwrap();
+            println!("Shader Compile Error! --> {}", a);
+            panic!();
+        }
+    }
     shader
 }
 
@@ -64,6 +83,24 @@ pub fn set_shader_program(
         gl.AttachShader(program, vertex_shader);
         gl.AttachShader(program, fragment_shader);
         gl.LinkProgram(program);
+        /*
+        {
+            // this will always fail even though the shader programs successfully links
+            let mut success: gl::types::GLint = 0;
+            gl.GetShaderiv(program, gl::LINK_STATUS, &mut success);
+            dbg!(success);
+            if success == 0 {
+                let mut infoLog = [0i8;512];
+                let mut size : GLsizei = 0;
+                gl.GetShaderInfoLog(program, 512, &mut size, infoLog.as_mut_ptr());
+                let infoLog: Vec<u8> = infoLog.iter().take_while(|&v| *v != 0 )
+                    .map(|&v| v as u8 ).collect();
+                let a = std::str::from_utf8(&infoLog).unwrap();
+                println!("Shader Link Error! --> {}", a);
+                panic!();
+            }
+        }
+         */
         gl.UseProgram(program);
         gl.DeleteShader(vertex_shader);
         gl.DeleteShader(fragment_shader);
@@ -88,4 +125,4 @@ pub mod utility;
 
 // folder
 // pub mod glutin;
-// pub mod nalgebra;
+pub mod nalgebra;

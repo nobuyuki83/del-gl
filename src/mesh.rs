@@ -62,12 +62,12 @@ void main() {
 }
 \0";
 
-        use crate::utility::{compile_shaders, get_location};
+        use crate::utility::{compile_shaders, get_uniform_location};
         unsafe {
             self.program = compile_shaders(gl, VS_SRC, FS_SRC);
-            self.loc_mat_modelview = get_location(gl, "matMV", self.program);
-            self.loc_mat_projection = get_location(gl, "matPrj", self.program);
-            self.loc_color = get_location(gl, "color", self.program);
+            self.loc_mat_modelview = get_uniform_location(gl, "matMV", self.program);
+            self.loc_mat_projection = get_uniform_location(gl, "matPrj", self.program);
+            self.loc_color = get_uniform_location(gl, "color", self.program);
             if gl.BindVertexArray.is_loaded() {
                 let mut vao0 = std::mem::zeroed();
                 gl.GenVertexArrays(1, &mut vao0);
@@ -102,10 +102,10 @@ void main() {
                 gl::STATIC_DRAW,
             );
             self.ebos.push(ElementBufferObject {
-                mode: mode,
+                mode,
                 elem_size: elem2vtx0.len(),
                 ebo: ebo0,
-                color: color,
+                color,
             });
         }
     }

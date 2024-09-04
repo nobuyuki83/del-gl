@@ -41,12 +41,12 @@ void main() {
     // gl_FragColor = vec4(0., 1., 0., 1.0);
 }
 \0";
-        use crate::utility::{compile_shaders, get_location};
+        use crate::utility::{compile_shaders, get_uniform_location};
         unsafe {
             self.program = compile_shaders(gl, VS_SRC, FS_SRC);
-            self.loc_mat_modelview = get_location(gl, "matMV", self.program);
-            self.loc_mat_projection = get_location(gl, "matPrj", self.program);
-            self.loc_color = get_location(gl, "color", self.program);
+            self.loc_mat_modelview = get_uniform_location(gl, "matMV", self.program);
+            self.loc_mat_projection = get_uniform_location(gl, "matPrj", self.program);
+            self.loc_color = get_uniform_location(gl, "color", self.program);
         }
     }
 
