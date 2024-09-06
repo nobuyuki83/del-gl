@@ -100,9 +100,9 @@ pub fn get_gl_string(gl: &gl::Gl, variant: gl::types::GLenum) -> Option<&'static
 
 pub mod drawer_array;
 pub mod drawer_array_xyrgb;
+pub mod drawer_array_xyzuv;
 pub mod drawer_mesh;
 pub mod drawer_mesh_colormap;
 pub mod drawer_mesh_tex;
-pub mod drawer_array_xyzuv;
 pub mod utility;
 pub mod view_ui_state;

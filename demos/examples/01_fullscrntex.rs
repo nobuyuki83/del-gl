@@ -48,7 +48,9 @@ impl ApplicationHandler for MyApp {
         });
         unsafe {
             //
-            let Some(rndr) = &self.renderer else { panic!(); };
+            let Some(rndr) = &self.renderer else {
+                panic!();
+            };
             let gl = &rndr.gl;
             {
                 #[rustfmt::skip]
@@ -115,10 +117,10 @@ impl ApplicationHandler for MyApp {
                 // and the function is no-op, but it's wise to resize it for portability
                 // reasons.
                 if let Some(app_internal::AppState {
-                                gl_context,
-                                gl_surface,
-                                window: _,
-                            }) = self.appi.state.as_ref()
+                    gl_context,
+                    gl_surface,
+                    window: _,
+                }) = self.appi.state.as_ref()
                 {
                     gl_surface.resize(
                         gl_context,
@@ -132,10 +134,10 @@ impl ApplicationHandler for MyApp {
             WindowEvent::CloseRequested
             | WindowEvent::KeyboardInput {
                 event:
-                KeyEvent {
-                    logical_key: Key::Named(NamedKey::Escape),
-                    ..
-                },
+                    KeyEvent {
+                        logical_key: Key::Named(NamedKey::Escape),
+                        ..
+                    },
                 ..
             } => event_loop.exit(),
             _ => (),
@@ -145,10 +147,10 @@ impl ApplicationHandler for MyApp {
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         use glutin::prelude::GlSurface;
         if let Some(app_internal::AppState {
-                        gl_context,
-                        gl_surface,
-                        window,
-                    }) = self.appi.state.as_ref()
+            gl_context,
+            gl_surface,
+            window,
+        }) = self.appi.state.as_ref()
         {
             let renderer = self.renderer.as_ref().unwrap();
             renderer.draw();

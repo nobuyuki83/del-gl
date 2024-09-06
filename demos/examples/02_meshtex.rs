@@ -185,7 +185,7 @@ impl MyApp {
                 far: 3.0,
                 cam_pos: [0., 0., 2.],
                 proj_direction: false,
-                scale: 1.
+                scale: 1.,
             },
             is_left_btn_down_not_for_view_ctrl: false,
             is_view_changed: false,
@@ -341,74 +341,18 @@ impl winit::application::ApplicationHandler for MyApp {
                     },
                 ..
             } => event_loop.exit(),
-            winit::event::WindowEvent::MouseWheel {
-                device_id: _,
-                delta,
-                ..
-            } => match delta {
-                winit::event::MouseScrollDelta::LineDelta(_, dy) => {
-                    self.view_prj.scale *= 1.01_f32.powf(dy);
-                    self.is_view_changed = false;
-                    if let Some(state) = &self.appi.state {
-                        state.window.request_redraw();
-                    }
-                }
-                _ => {}
-            },
-            winit::event::WindowEvent::MouseInput {
-                device_id,
-                state,
-                button,
-            } => {
-                if button == winit::event::MouseButton::Left
-                    && state == winit::event::ElementState::Pressed
-                {
-                    self.ui_state.is_left_btn = true;
-                    if (!self.ui_state.is_mod_shift) && (!self.ui_state.is_mod_alt) {
-                        self.is_left_btn_down_not_for_view_ctrl = true;
-                    }
-                }
-                if button == winit::event::MouseButton::Left
-                    && state == winit::event::ElementState::Released
-                {
-                    self.ui_state.is_left_btn = false;
-                }
-            }
-            winit::event::WindowEvent::ModifiersChanged(state) => {
-                //println!("{} {}", nav.is_mod_alt, nav.is_mod_shift);
-                self.ui_state.is_mod_alt = state.ralt_state()
-                    == winit::keyboard::ModifiersKeyState::Pressed
-                    || state.lalt_state() == winit::keyboard::ModifiersKeyState::Pressed;
-                self.ui_state.is_mod_shift = state.rshift_state()
-                    == winit::keyboard::ModifiersKeyState::Pressed
-                    || state.lshift_state() == winit::keyboard::ModifiersKeyState::Pressed;
-            }
-            winit::event::WindowEvent::CursorMoved {
-                device_id: _,
-                position,
-                ..
-            } => {
-                // println!("{:?} {:?} {:?}", device_id, position, modifiers);
-                self.ui_state.update_cursor_position(position.x, position.y);
-                if self.ui_state.is_left_btn && self.ui_state.is_mod_alt {
-                    self.view_rot
-                        .camera_rotation(self.ui_state.cursor_dx, self.ui_state.cursor_dy);
-                    self.is_view_changed = true;
-                }
-                if self.ui_state.is_left_btn && self.ui_state.is_mod_shift {
-                    let asp = self.ui_state.win_width as f32 / self.ui_state.win_height as f32;
-                    self.view_prj.camera_translation(
-                        asp,
-                        self.ui_state.cursor_dx as f32,
-                        self.ui_state.cursor_dy as f32,
-                    );
-                    self.is_view_changed = true;
-                }
-                if let Some(state) = &self.appi.state {
-                    state.window.request_redraw();
-                }
-            }
             _ => (),
+        }
+        let redraw = del_winit_glutin::view_navigation(
+            event,
+            &mut self.ui_state,
+            &mut self.view_prj,
+            &mut self.view_rot,
+        );
+        if redraw {
+            if let Some(state) = &self.appi.state {
+                state.window.request_redraw();
+            }
         }
     }
 
@@ -422,8 +366,11 @@ impl winit::application::ApplicationHandler for MyApp {
         {
             let img_shape = { (window.inner_size().width, window.inner_size().height) };
             let cam_model = self.view_rot.mat4_col_major();
-            let cam_projection = self.view_prj.mat4_col_major(img_shape.0 as f32/img_shape.1 as f32);
-            let transform_world2ndc = del_geo_core::mat4_col_major::multmat(&cam_projection, &cam_model);
+            let cam_projection = self
+                .view_prj
+                .mat4_col_major(img_shape.0 as f32 / img_shape.1 as f32);
+            let transform_world2ndc =
+                del_geo_core::mat4_col_major::multmat(&cam_projection, &cam_model);
             //
             let renderer = self.renderer.as_ref().unwrap();
             renderer.draw(&transform_world2ndc);
