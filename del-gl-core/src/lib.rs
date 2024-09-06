@@ -1,26 +1,6 @@
 use crate::gl::types::GLsizei;
 use std::ffi::CStr;
 
-pub mod view_ui_state;
-
-/*
-pub mod gl {
-    #![allow(
-    clippy::manual_non_exhaustive,
-    clippy::too_many_arguments,
-    clippy::unused_unit,
-    clippy::upper_case_acronyms,
-    non_camel_case_types
-    )]
-
-    pub use self::Gles2 as Gl;
-
-    // gl_bindings.rs is generated in build.rs using https://crates.io/crates/gl_generator
-    // include!(concat!(env!("CARGO_MANIFEST_DIR"), "/target/gl_bindings.rs"));
-    include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
-}
- */
-
 pub mod gl {
     #![allow(clippy::all)]
     include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
@@ -61,11 +41,7 @@ pub unsafe fn create_shader(
     shader
 }
 
-pub fn set_shader_program(
-    gl: &gl::Gl,
-    vertex_shader_source: &[u8],
-    fragment_shader_source: &[u8],
-) -> gl::types::GLuint {
+pub fn print_info(gl: &gl::Gl) {
     if let Some(renderer) = get_gl_string(&gl, gl::RENDERER) {
         println!("Running on {}", renderer.to_string_lossy());
     }
@@ -76,6 +52,13 @@ pub fn set_shader_program(
     if let Some(shaders_version) = get_gl_string(&gl, gl::SHADING_LANGUAGE_VERSION) {
         println!("Shaders version on {}", shaders_version.to_string_lossy());
     }
+}
+
+pub fn set_shader_program(
+    gl: &gl::Gl,
+    vertex_shader_source: &[u8],
+    fragment_shader_source: &[u8],
+) -> gl::types::GLuint {
     unsafe {
         let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, vertex_shader_source);
         let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, fragment_shader_source);
@@ -115,14 +98,11 @@ pub fn get_gl_string(gl: &gl::Gl, variant: gl::types::GLenum) -> Option<&'static
     }
 }
 
-pub mod app_internal;
-pub mod array;
-pub mod array_vtxcolor;
-pub mod mesh;
-pub mod mesh_colormap;
-pub mod mesh_tex;
+pub mod drawer_array;
+pub mod drawer_array_xyrgb;
+pub mod drawer_mesh;
+pub mod drawer_mesh_colormap;
+pub mod drawer_mesh_tex;
+pub mod drawer_array_xyzuv;
 pub mod utility;
-
-// folder
-// pub mod glutin;
-pub mod nalgebra;
+pub mod view_ui_state;

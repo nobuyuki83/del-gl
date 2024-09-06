@@ -8,8 +8,10 @@ use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::Window;
+
 //
-use del_gl::{app_internal, gl};
+use del_gl_core::gl;
+use del_winit_glutin::app_internal;
 
 const VERTEX_SHADER_SOURCE: &[u8] = b"
 #version 330
@@ -43,11 +45,7 @@ pub struct MyRenderer {
 }
 
 impl MyRenderer {
-    fn new<D: GlDisplay>(gl_display: &D) -> Self {
-        let gl = gl::Gl::load_with(|symbol| {
-            let symbol = std::ffi::CString::new(symbol).unwrap();
-            gl_display.get_proc_address(symbol.as_c_str()).cast()
-        });
+    fn new(gl: gl::Gl) -> Self {
         Self {
             program: 0,
             vao: 0,
@@ -60,7 +58,7 @@ impl MyRenderer {
         let gl = &self.gl;
         unsafe {
             self.program =
-                del_gl::set_shader_program(&gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+                del_gl_core::set_shader_program(&gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
             self.vao = std::mem::zeroed();
             gl.GenVertexArrays(1, &mut self.vao);
             gl.BindVertexArray(self.vao);
@@ -153,28 +151,31 @@ impl ApplicationHandler for MyApp {
         // buffers. It also performs function loading, which needs a current context on
         // WGL.
         self.renderer.get_or_insert_with(|| {
-            let mut render: MyRenderer = MyRenderer::new(&app_state.gl_context.display());
+            let gl_display = &app_state.gl_context.display();
+            let gl = gl::Gl::load_with(|symbol| {
+                let symbol = std::ffi::CString::new(symbol).unwrap();
+                gl_display.get_proc_address(symbol.as_c_str()).cast()
+            });
+            let mut render: MyRenderer = MyRenderer::new(gl);
             render.init_gl();
             render
         });
 
+        let gl = if let Some(rndr) = &self.renderer { &rndr.gl } else { panic!(); };
+
         unsafe {
             #[rustfmt::skip]
             static VERTEX_DATA: [f32; 15] = [
-                -0.5, -0.5,  1.0,  0.0,  0.0,
-                0.0,  0.5,  0.0,  1.0,  0.0,
-                0.5, -0.5,  0.0,  0.0,  1.0,
+                -0.5, -0.5, 1.0, 0.0, 0.0,
+                0.0, 0.5, 0.0, 1.0, 0.0,
+                0.5, -0.5, 0.0, 0.0, 1.0,
             ];
-            if let Some(rndr) = &self.renderer {
-                let gl = &rndr.gl;
-                // gl.BufferData(gl::ARRAY_BUFFER, 0, 0 as *const _, gl::STATIC_DRAW);
-                rndr.gl.BufferData(
-                    gl::ARRAY_BUFFER,
-                    (VERTEX_DATA.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-                    VERTEX_DATA.as_ptr() as *const _,
-                    gl::STATIC_DRAW,
-                );
-            }
+            gl.BufferData(
+                gl::ARRAY_BUFFER,
+                (VERTEX_DATA.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                VERTEX_DATA.as_ptr() as *const _,
+                gl::STATIC_DRAW,
+            );
         }
         assert!(self.appi.state.replace(app_state).is_none());
     }
@@ -199,10 +200,10 @@ impl ApplicationHandler for MyApp {
                 // and the function is no-op, but it's wise to resize it for portability
                 // reasons.
                 if let Some(app_internal::AppState {
-                    gl_context,
-                    gl_surface,
-                    window: _,
-                }) = self.appi.state.as_ref()
+                                gl_context,
+                                gl_surface,
+                                window: _,
+                            }) = self.appi.state.as_ref()
                 {
                     gl_surface.resize(
                         gl_context,
@@ -216,10 +217,10 @@ impl ApplicationHandler for MyApp {
             WindowEvent::CloseRequested
             | WindowEvent::KeyboardInput {
                 event:
-                    KeyEvent {
-                        logical_key: Key::Named(NamedKey::Escape),
-                        ..
-                    },
+                KeyEvent {
+                    logical_key: Key::Named(NamedKey::Escape),
+                    ..
+                },
                 ..
             } => event_loop.exit(),
             _ => (),
@@ -228,10 +229,10 @@ impl ApplicationHandler for MyApp {
 
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         if let Some(app_internal::AppState {
-            gl_context,
-            gl_surface,
-            window,
-        }) = self.appi.state.as_ref()
+                        gl_context,
+                        gl_surface,
+                        window,
+                    }) = self.appi.state.as_ref()
         {
             let renderer = self.renderer.as_ref().unwrap();
             renderer.draw();

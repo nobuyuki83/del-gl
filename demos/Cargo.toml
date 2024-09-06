@@ -1,0 +1,30 @@
+[package]
+name = "demos"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+glutin = "0.32.0"
+glutin-winit = "0.5.0"
+winit = "0.30.5"
+raw-window-handle = "0.6.2"
+image = "0.25.2"
+num-traits = "0.2.19"
+arrayref = "0.3.8"
+#
+del-msh-core = {workspace = true}
+del-geo-core = {workspace = true}
+del-gl-core = {path="../del-gl-core"}
+del-winit-glutin = {path="../del-winit-glutin"}
+
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+
+[build-dependencies]
+gl_generator = "0.14.0"

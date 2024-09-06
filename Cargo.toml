@@ -1,16 +1,18 @@
-[package]
-name = "del-gl"
+[workspace]
+members = ["del-gl-core", "demos"]
+resolver = "2"
+
+[workspace.package]
 version = "0.1.3"
 edition = "2021"
 authors = ["Nobuyuki Umetani <n.umetani@gmail.com>"]
-build = "build.rs"
 license = "MIT"
 repository = "https://github.com/nobuyuki83/del-gl/"
 description = "OpenGL utility library in Rust language."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
+[workspace.dependencies]
 glutin = "0.32.0"
 glutin-winit = "0.5.0"
 winit = "0.30.5"
@@ -19,12 +21,8 @@ image = "0.25.2"
 num-traits = "0.2.19"
 nalgebra = "0.33.0"
 arrayref = "0.3.8"
-#
-# del-msh-core = {path = "../del-msh/del-msh-core"}
- #del-geo-core = {path = "../del-geo/del-geo-core"}
+del-msh-core = {path = "../del-msh/del-msh-core"}
+del-geo-core = {path = "../del-geo/del-geo-core"}
 
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
-
-[build-dependencies]
-gl_generator = "0.14.0"
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }

@@ -1,8 +1,9 @@
+use glutin::display::GlDisplay;
 use image::EncodableLayout;
 use num_traits::cast::AsPrimitive;
 
 //
-use del_gl::{app_internal, gl};
+use del_gl_core::gl;
 
 const VERTEX_SHADER_SOURCE: &[u8] = b"
 #version 330
@@ -55,14 +56,8 @@ struct ElementBufferObject {
     ebo: gl::types::GLuint,
 }
 
-
-
 impl MyRenderer {
-    fn new<D: glutin::display::GlDisplay>(gl_display: &D) -> Self {
-        let gl = gl::Gl::load_with(|symbol| {
-            let symbol = std::ffi::CString::new(symbol).unwrap();
-            gl_display.get_proc_address(symbol.as_c_str()).cast()
-        });
+    fn new(gl: gl::Gl) -> Self {
         Self {
             gl,
             program: 0,
@@ -115,22 +110,14 @@ impl MyRenderer {
     fn init_gl(&mut self) {
         unsafe {
             let gl = &self.gl;
+            del_gl_core::print_info(gl);
             gl.Enable(gl::DEPTH_TEST);
-            if let Some(renderer) = del_gl::get_gl_string(&gl, gl::RENDERER) {
-                println!("Running on {}", renderer.to_string_lossy());
-            }
-            if let Some(version) = del_gl::get_gl_string(&gl, gl::VERSION) {
-                println!("OpenGL Version {}", version.to_string_lossy());
-            }
-            if let Some(shaders_version) = del_gl::get_gl_string(&gl, gl::SHADING_LANGUAGE_VERSION)
-            {
-                println!("Shaders version on {}", shaders_version.to_string_lossy());
-            }
             self.program =
-                del_gl::set_shader_program(&gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
-            self.loc_xyz = del_gl::utility::get_attrib_location(gl, "position", self.program);
-            self.loc_uv = del_gl::utility::get_attrib_location(gl, "texIn", self.program);
-            self.loc_tex = del_gl::utility::get_uniform_location(gl, "myTextureSampler", self.program);
+                del_gl_core::set_shader_program(&gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+            self.loc_xyz = del_gl_core::utility::get_attrib_location(gl, "position", self.program);
+            self.loc_uv = del_gl_core::utility::get_attrib_location(gl, "texIn", self.program);
+            self.loc_tex =
+                del_gl_core::utility::get_uniform_location(gl, "myTextureSampler", self.program);
             self.loc_mat_mvp =
                 gl.GetUniformLocation(self.program, b"matMVP\0".as_ptr() as *const _);
             assert_ne!(self.loc_xyz, -1);
@@ -173,23 +160,35 @@ impl Drop for MyRenderer {
 }
 
 pub struct MyApp {
-    pub appi: crate::app_internal::AppInternal,
+    pub appi: del_winit_glutin::app_internal::AppInternal,
     pub renderer: Option<MyRenderer>,
-    pub nav: del_gl::nalgebra::view_navigation3::Navigation3,
-    pub ui_state: del_gl::view_ui_state::UiState,
+    pub view_rot: del_geo_core::view_rotation::Trackball,
+    pub view_prj: del_geo_core::view_projection::Perspective,
+    pub ui_state: del_gl_core::view_ui_state::UiState,
     pub is_left_btn_down_not_for_view_ctrl: bool,
-    pub is_view_changed: bool
+    pub is_view_changed: bool,
 }
 
 impl MyApp {
-    pub fn new(template: glutin::config::ConfigTemplateBuilder, display_builder: glutin_winit::DisplayBuilder) -> Self {
+    pub fn new(
+        template: glutin::config::ConfigTemplateBuilder,
+        display_builder: glutin_winit::DisplayBuilder,
+    ) -> Self {
         Self {
-            appi: app_internal::AppInternal::new(template, display_builder),
+            appi: del_winit_glutin::app_internal::AppInternal::new(template, display_builder),
             renderer: None,
-            ui_state: del_gl::view_ui_state::UiState::new(),
-            nav: del_gl::nalgebra::view_navigation3::Navigation3::new(1.) ,
+            ui_state: del_gl_core::view_ui_state::UiState::new(),
+            view_rot: del_geo_core::view_rotation::Trackball::new(),
+            view_prj: del_geo_core::view_projection::Perspective {
+                lens: 24.,
+                near: 0.5,
+                far: 3.0,
+                cam_pos: [0., 0., 2.],
+                proj_direction: false,
+                scale: 1.
+            },
             is_left_btn_down_not_for_view_ctrl: false,
-            is_view_changed: false
+            is_view_changed: false,
         }
     }
 }
@@ -204,7 +203,12 @@ impl winit::application::ApplicationHandler for MyApp {
         // WGL.
         use glutin::display::GetGlDisplay;
         self.renderer.get_or_insert_with(|| {
-            let mut render: MyRenderer = MyRenderer::new(&app_state.gl_context.display());
+            let gl_display = &app_state.gl_context.display();
+            let gl = gl::Gl::load_with(|symbol| {
+                let symbol = std::ffi::CString::new(symbol).unwrap();
+                gl_display.get_proc_address(symbol.as_c_str()).cast()
+            });
+            let mut render: MyRenderer = MyRenderer::new(gl);
             render.init_gl();
             render
         });
@@ -219,7 +223,6 @@ impl winit::application::ApplicationHandler for MyApp {
         let img_tex = img_tex.decode().unwrap().to_rgb8();
         let img_tex = image::imageops::flip_vertical(&img_tex);
         println!("{:?}", img_tex.dimensions());
-        //
         //
         unsafe {
             if let Some(rndr) = &mut self.renderer {
@@ -300,19 +303,12 @@ impl winit::application::ApplicationHandler for MyApp {
         assert!(self.appi.state.replace(app_state).is_none());
     }
 
-    fn suspended(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
-        // This event is only raised on Android, where the backing NativeWindow for a GL
-        // Surface can appear and disappear at any moment.
-        println!("Android window removed");
-        self.appi.suspended();
-    }
-
     fn window_event(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
         _window_id: winit::window::WindowId,
-        event: winit::event::WindowEvent)
-    {
+        event: winit::event::WindowEvent,
+    ) {
         use glutin::prelude::GlSurface;
         self.is_left_btn_down_not_for_view_ctrl = false;
         match event {
@@ -321,7 +317,7 @@ impl winit::application::ApplicationHandler for MyApp {
                 // Notable platforms here are Wayland and macOS, other don't require it
                 // and the function is no-op, but it's wise to resize it for portability
                 // reasons.
-                if let Some(app_internal::AppState {
+                if let Some(del_winit_glutin::app_internal::AppState {
                     gl_context,
                     gl_surface,
                     window: _,
@@ -336,7 +332,8 @@ impl winit::application::ApplicationHandler for MyApp {
                     renderer.resize(size.width as i32, size.height as i32);
                 }
             }
-            winit::event::WindowEvent::CloseRequested | winit::event::WindowEvent::KeyboardInput {
+            winit::event::WindowEvent::CloseRequested
+            | winit::event::WindowEvent::KeyboardInput {
                 event:
                     winit::event::KeyEvent {
                         logical_key: winit::keyboard::Key::Named(winit::keyboard::NamedKey::Escape),
@@ -344,43 +341,67 @@ impl winit::application::ApplicationHandler for MyApp {
                     },
                 ..
             } => event_loop.exit(),
-            winit::event::WindowEvent::MouseWheel { device_id: _, delta, .. } => match delta {
+            winit::event::WindowEvent::MouseWheel {
+                device_id: _,
+                delta,
+                ..
+            } => match delta {
                 winit::event::MouseScrollDelta::LineDelta(_, dy) => {
-                    self.nav.scale *= 1.01_f32.powf(dy);
+                    self.view_prj.scale *= 1.01_f32.powf(dy);
                     self.is_view_changed = false;
                     if let Some(state) = &self.appi.state {
                         state.window.request_redraw();
                     }
                 }
                 _ => {}
-            }
-            winit::event::WindowEvent::MouseInput{device_id, state, button} => {
-                if button == winit::event::MouseButton::Left && state == winit::event::ElementState::Pressed {
+            },
+            winit::event::WindowEvent::MouseInput {
+                device_id,
+                state,
+                button,
+            } => {
+                if button == winit::event::MouseButton::Left
+                    && state == winit::event::ElementState::Pressed
+                {
                     self.ui_state.is_left_btn = true;
                     if (!self.ui_state.is_mod_shift) && (!self.ui_state.is_mod_alt) {
                         self.is_left_btn_down_not_for_view_ctrl = true;
                     }
                 }
-                if button == winit::event::MouseButton::Left && state == winit::event::ElementState::Released {
+                if button == winit::event::MouseButton::Left
+                    && state == winit::event::ElementState::Released
+                {
                     self.ui_state.is_left_btn = false;
                 }
-            },
+            }
             winit::event::WindowEvent::ModifiersChanged(state) => {
                 //println!("{} {}", nav.is_mod_alt, nav.is_mod_shift);
-                self.ui_state.is_mod_alt = state.ralt_state() == winit::keyboard::ModifiersKeyState::Pressed || state.lalt_state() == winit::keyboard::ModifiersKeyState::Pressed;
-                self.ui_state.is_mod_shift = state.rshift_state() == winit::keyboard::ModifiersKeyState::Pressed || state.lshift_state() == winit::keyboard::ModifiersKeyState::Pressed;
+                self.ui_state.is_mod_alt = state.ralt_state()
+                    == winit::keyboard::ModifiersKeyState::Pressed
+                    || state.lalt_state() == winit::keyboard::ModifiersKeyState::Pressed;
+                self.ui_state.is_mod_shift = state.rshift_state()
+                    == winit::keyboard::ModifiersKeyState::Pressed
+                    || state.lshift_state() == winit::keyboard::ModifiersKeyState::Pressed;
             }
-            winit::event::WindowEvent::CursorMoved { device_id: _, position, .. } => {
+            winit::event::WindowEvent::CursorMoved {
+                device_id: _,
+                position,
+                ..
+            } => {
                 // println!("{:?} {:?} {:?}", device_id, position, modifiers);
                 self.ui_state.update_cursor_position(position.x, position.y);
                 if self.ui_state.is_left_btn && self.ui_state.is_mod_alt {
-                    self.nav.camera_rotation(self.ui_state.cursor_dx, self.ui_state.cursor_dy);
+                    self.view_rot
+                        .camera_rotation(self.ui_state.cursor_dx, self.ui_state.cursor_dy);
                     self.is_view_changed = true;
                 }
                 if self.ui_state.is_left_btn && self.ui_state.is_mod_shift {
-                    self.nav.camera_translation(
-                        self.ui_state.win_width, self.ui_state.win_height,
-                        self.ui_state.cursor_dx, self.ui_state.cursor_dy);
+                    let asp = self.ui_state.win_width as f32 / self.ui_state.win_height as f32;
+                    self.view_prj.camera_translation(
+                        asp,
+                        self.ui_state.cursor_dx as f32,
+                        self.ui_state.cursor_dy as f32,
+                    );
                     self.is_view_changed = true;
                 }
                 if let Some(state) = &self.appi.state {
@@ -393,36 +414,29 @@ impl winit::application::ApplicationHandler for MyApp {
 
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         use glutin::prelude::GlSurface;
-        if let Some(app_internal::AppState {
+        if let Some(del_winit_glutin::app_internal::AppState {
             gl_context,
             gl_surface,
             window,
         }) = self.appi.state.as_ref()
         {
             let img_shape = { (window.inner_size().width, window.inner_size().height) };
-            let cam_projection = del_geo_core::mat4_col_major::camera_perspective_blender(
-                img_shape.0 as f32 / img_shape.1 as f32,
-                24f32,
-                0.5,
-                3.0,
-                false,
-            );
-            let cam_model = self.nav.modelview_matrix();
-            let cam_model = arrayref::array_ref!(cam_model.as_slice(), 0, 16);
-            let cam_view =
-                del_geo_core::mat4_col_major::camera_external_blender(&[0., 0., 2.], 0., 0., 0.);
-            let cam_scale = del_geo_core::mat4_col_major::scale_uniform(self.nav.scale);
-            let transform_world2ndc = {
-                let modelview =  del_geo_core::mat4_col_major::multmat(&cam_scale, &cam_model);
-                let scalemodelview =  del_geo_core::mat4_col_major::multmat(&cam_view, &modelview);
-                del_geo_core::mat4_col_major::multmat(&cam_projection, &scalemodelview)
-            };
+            let cam_model = self.view_rot.mat4_col_major();
+            let cam_projection = self.view_prj.mat4_col_major(img_shape.0 as f32/img_shape.1 as f32);
+            let transform_world2ndc = del_geo_core::mat4_col_major::multmat(&cam_projection, &cam_model);
             //
             let renderer = self.renderer.as_ref().unwrap();
             renderer.draw(&transform_world2ndc);
             window.request_redraw();
             gl_surface.swap_buffers(gl_context).unwrap();
         }
+    }
+
+    fn suspended(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
+        // This event is only raised on Android, where the backing NativeWindow for a GL
+        // Surface can appear and disappear at any moment.
+        println!("Android window removed");
+        self.appi.suspended();
     }
 }
 
@@ -437,7 +451,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let template = glutin::config::ConfigTemplateBuilder::new()
         .with_alpha_size(8)
         .with_transparency(cfg!(cgl_backend));
-    let display_builder = glutin_winit::DisplayBuilder::new().with_window_attributes(Some(window_attributes));
+    let display_builder =
+        glutin_winit::DisplayBuilder::new().with_window_attributes(Some(window_attributes));
     let mut app = MyApp::new(template, display_builder);
     let event_loop = winit::event_loop::EventLoop::new().unwrap();
     event_loop.run_app(&mut app)?;
