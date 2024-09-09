@@ -22,7 +22,9 @@ num-traits = "0.2.19"
 nalgebra = "0.33.0"
 arrayref = "0.3.8"
 
-# del-geo-core = {path = "../del-geo/del-geo-core"}
-# del-msh-core = {path = "../del-msh/del-msh-core"}
-del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+del-gl-core = {path="del-gl-core"}
+del-winit-glutin = {path="del-winit-glutin"}
+del-geo-core = {path = "../del-geo/del-geo-core"}
+del-msh-core = {path = "../del-msh/del-msh-core"}
+# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }

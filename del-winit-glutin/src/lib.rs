@@ -37,13 +37,9 @@ pub fn view_navigation(
             }
             return false;
         }
-        winit::event::WindowEvent::ModifiersChanged(state) => {
-            //println!("{} {}", nav.is_mod_alt, nav.is_mod_shift);
-            ui_state.is_mod_alt = state.ralt_state() == winit::keyboard::ModifiersKeyState::Pressed
-                || state.lalt_state() == winit::keyboard::ModifiersKeyState::Pressed;
-            ui_state.is_mod_shift = state.rshift_state()
-                == winit::keyboard::ModifiersKeyState::Pressed
-                || state.lshift_state() == winit::keyboard::ModifiersKeyState::Pressed;
+        winit::event::WindowEvent::ModifiersChanged(modifiers) => {
+            ui_state.is_mod_alt = modifiers.state() == winit::keyboard::ModifiersState::ALT;
+            ui_state.is_mod_shift = modifiers.state() == winit::keyboard::ModifiersState::SHIFT;
             return false;
         }
         winit::event::WindowEvent::CursorMoved {
