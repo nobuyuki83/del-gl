@@ -20,7 +20,7 @@ pub fn view_navigation(
             }
         },
         winit::event::WindowEvent::MouseInput {
-            device_id,
+            device_id: _,
             state,
             button,
         } => {

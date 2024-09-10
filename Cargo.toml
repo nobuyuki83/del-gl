@@ -24,5 +24,6 @@ arrayref = "0.3.8"
 
 # del-geo-core = {path = "../del-geo/del-geo-core"}
 # del-msh-core = {path = "../del-msh/del-msh-core"}
+del-gl-core = { path = "del-gl-core" }
 del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
 del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
