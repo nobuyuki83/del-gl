@@ -370,7 +370,7 @@ impl winit::application::ApplicationHandler for MyApp {
                 .view_prj
                 .mat4_col_major(img_shape.0 as f32 / img_shape.1 as f32);
             let transform_world2ndc =
-                del_geo_core::mat4_col_major::multmat(&cam_projection, &cam_model);
+                del_geo_core::mat4_col_major::mult_mat(&cam_projection, &cam_model);
             //
             let renderer = self.renderer.as_ref().unwrap();
             renderer.draw(&transform_world2ndc);
