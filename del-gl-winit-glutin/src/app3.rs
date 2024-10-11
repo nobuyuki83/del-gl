@@ -1,33 +1,53 @@
 use glutin::display::GlDisplay;
-use image::EncodableLayout;
 use winit::application::ApplicationHandler;
 use winit::event::{KeyEvent, WindowEvent};
-use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, NamedKey};
-use winit::window::Window;
 //
 use del_gl_core::gl;
-use del_gl_core::gl::types::GLfloat;
-use del_gl_winit_glutin::app_internal;
+use crate::app_internal;
 
-pub struct MyApp {
-    pub appi: crate::app_internal::AppInternal,
-    pub renderer: Option<del_gl_core::drawer_array_xyzuv::Drawer>,
+pub trait Content {
+    fn new() -> Self;
+    fn compute_image(&mut self,
+                     img_shape: (usize, usize),
+                     cam_projection: &[f32;16],
+                     cam_model: &[f32;16]) -> Vec<u8>;
 }
 
-impl MyApp {
+pub struct MyApp<C: Content>{
+    pub content: C,
+    pub appi: crate::app_internal::AppInternal,
+    pub renderer: Option<del_gl_core::drawer_array_xyzuv::Drawer>,
+    pub view_rot: del_geo_core::view_rotation::Trackball,
+    pub view_prj: del_geo_core::view_projection::Perspective,
+    pub ui_state: del_gl_core::view_ui_state::UiState,
+}
+
+impl<C: Content> MyApp<C> {
     pub fn new(
         template: glutin::config::ConfigTemplateBuilder,
         display_builder: glutin_winit::DisplayBuilder,
     ) -> Self {
+        //
         Self {
             appi: app_internal::AppInternal::new(template, display_builder),
             renderer: None,
+            ui_state: del_gl_core::view_ui_state::UiState::new(),
+            view_rot: del_geo_core::view_rotation::Trackball::new(),
+            view_prj: del_geo_core::view_projection::Perspective {
+                lens: 24.,
+                near: 0.5,
+                far: 3.0,
+                cam_pos: [0., 0., 2.],
+                proj_direction: true,
+                scale: 1.,
+            },
+            content: C::new()
         }
     }
 }
 
-impl ApplicationHandler for MyApp {
+impl<C: Content> ApplicationHandler for MyApp<C> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         use glutin::display::GetGlDisplay;
         let Some(app_state) = self.appi.resumed(event_loop) else {
@@ -55,13 +75,13 @@ impl ApplicationHandler for MyApp {
             {
                 #[rustfmt::skip]
                 static VERTEX_DATA: [f32; 24] = [
-                    -1.0, -1.0, 0., 0.,
-                    1.0, -1.0, 1., 0.,
-                    1.0, 1.0, 1., 1.,
+                    -1.0, -1.0, 0., 1.,
+                    1.0, -1.0, 1., 1.,
+                    1.0, 1.0, 1., 0.,
                     //
-                    -1.0, -1.0, 0., 0.,
-                    1.0, 1.0, 1., 1.,
-                    -1.0, 1.0, 0., 1.
+                    -1.0, -1.0, 0., 1.,
+                    1.0, 1.0, 1., 0.,
+                    -1.0, 1.0, 0., 0.
                 ];
                 gl.BindBuffer(gl::ARRAY_BUFFER, rndr.vbo);
                 gl.BufferData(
@@ -70,27 +90,6 @@ impl ApplicationHandler for MyApp {
                     VERTEX_DATA.as_ptr() as *const _,
                     gl::STATIC_DRAW,
                 );
-            }
-            {
-                let img = image::ImageReader::open("asset/spot_texture.png").unwrap();
-                println!("{:?}", img.format());
-                let img = img.decode().unwrap().to_rgb8();
-                let img = image::imageops::flip_vertical(&img);
-                println!("{:?}", img.dimensions());
-                gl.BindTexture(gl::TEXTURE_2D, rndr.id_tex);
-                gl.PixelStorei(gl::UNPACK_ALIGNMENT, 1);
-                gl.TexImage2D(
-                    gl::TEXTURE_2D,
-                    0,
-                    gl::RGB.try_into().unwrap(),
-                    img.width().try_into().unwrap(),
-                    img.height().try_into().unwrap(),
-                    0,
-                    gl::RGB,
-                    gl::UNSIGNED_BYTE,
-                    img.as_bytes().as_ptr() as *const _,
-                );
-                gl.GenerateMipmap(gl::TEXTURE_2D);
             }
         }
         assert!(self.appi.state.replace(app_state).is_none());
@@ -117,10 +116,10 @@ impl ApplicationHandler for MyApp {
                 // and the function is no-op, but it's wise to resize it for portability
                 // reasons.
                 if let Some(app_internal::AppState {
-                    gl_context,
-                    gl_surface,
-                    window: _,
-                }) = self.appi.state.as_ref()
+                                gl_context,
+                                gl_surface,
+                                window: _,
+                            }) = self.appi.state.as_ref()
                 {
                     gl_surface.resize(
                         gl_context,
@@ -129,29 +128,77 @@ impl ApplicationHandler for MyApp {
                     );
                     let renderer = self.renderer.as_ref().unwrap();
                     renderer.resize(size.width as i32, size.height as i32);
+                    self.ui_state.win_width = size.width;
+                    self.ui_state.win_height = size.height;
                 }
             }
             WindowEvent::CloseRequested
             | WindowEvent::KeyboardInput {
                 event:
-                    KeyEvent {
-                        logical_key: Key::Named(NamedKey::Escape),
-                        ..
-                    },
+                KeyEvent {
+                    logical_key: Key::Named(NamedKey::Escape),
+                    ..
+                },
                 ..
             } => event_loop.exit(),
             _ => (),
+        }
+        let redraw = crate::view_navigation(
+            event,
+            &mut self.ui_state,
+            &mut self.view_prj,
+            &mut self.view_rot,
+        );
+        if redraw {
+            if let Some(state) = &self.appi.state {
+                state.window.request_redraw();
+            }
         }
     }
 
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         use glutin::prelude::GlSurface;
         if let Some(app_internal::AppState {
-            gl_context,
-            gl_surface,
-            window,
-        }) = self.appi.state.as_ref()
+                        gl_context,
+                        gl_surface,
+                        window,
+                    }) = self.appi.state.as_ref()
         {
+            let img_shape = {
+                (
+                    window.inner_size().width as usize,
+                    window.inner_size().height as usize,
+                )
+            };
+            let cam_model = self.view_rot.mat4_col_major();
+            let cam_projection = self
+                .view_prj
+                .mat4_col_major(img_shape.0 as f32 / img_shape.1 as f32);
+            let img_data = self.content.compute_image(
+                img_shape, &cam_projection, &cam_model);
+            assert_eq!(img_data.len(), img_shape.0 * img_shape.1 * 3);
+            //println!("{:?}",img.color());
+            let Some(ref rndr) = self.renderer else {
+                panic!();
+            };
+            let gl = &rndr.gl;
+            unsafe {
+                gl.BindTexture(gl::TEXTURE_2D, rndr.id_tex);
+                gl.PixelStorei(gl::UNPACK_ALIGNMENT, 1);
+                gl.TexImage2D(
+                    gl::TEXTURE_2D,
+                    0,
+                    gl::RGB.try_into().unwrap(),
+                    img_shape.0.try_into().unwrap(),
+                    img_shape.1.try_into().unwrap(),
+                    0,
+                    gl::RGB,
+                    gl::UNSIGNED_BYTE,
+                    img_data.as_ptr() as *const _,
+                );
+                gl.GenerateMipmap(gl::TEXTURE_2D);
+            }
+            //
             let renderer = self.renderer.as_ref().unwrap();
             renderer.draw();
             window.request_redraw();
@@ -160,18 +207,3 @@ impl ApplicationHandler for MyApp {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let template = glutin::config::ConfigTemplateBuilder::new()
-        .with_alpha_size(8)
-        .with_transparency(cfg!(cgl_backend));
-    let display_builder = {
-        let window_attributes = Window::default_attributes()
-            .with_transparent(false)
-            .with_title("01_texture_fullscrn");
-        glutin_winit::DisplayBuilder::new().with_window_attributes(Some(window_attributes))
-    };
-    let mut app = MyApp::new(template, display_builder);
-    let event_loop = EventLoop::new().unwrap();
-    event_loop.run_app(&mut app)?;
-    app.appi.exit_state
-}

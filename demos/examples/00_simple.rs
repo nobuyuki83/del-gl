@@ -11,7 +11,7 @@ use winit::window::Window;
 
 //
 use del_gl_core::gl;
-use del_winit_glutin::app_internal;
+use del_gl_winit_glutin::app_internal;
 
 const VERTEX_SHADER_SOURCE: &[u8] = b"
 #version 330

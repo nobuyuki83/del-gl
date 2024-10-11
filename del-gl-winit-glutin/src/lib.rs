@@ -1,4 +1,6 @@
 pub mod app_internal;
+pub mod app3;
+
 pub fn view_navigation(
     event: winit::event::WindowEvent,
     ui_state: &mut del_gl_core::view_ui_state::UiState,

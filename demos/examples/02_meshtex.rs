@@ -160,7 +160,7 @@ impl Drop for MyRenderer {
 }
 
 pub struct MyApp {
-    pub appi: del_winit_glutin::app_internal::AppInternal,
+    pub appi: del_gl_winit_glutin::app_internal::AppInternal,
     pub renderer: Option<MyRenderer>,
     pub view_rot: del_geo_core::view_rotation::Trackball,
     pub view_prj: del_geo_core::view_projection::Perspective,
@@ -175,7 +175,7 @@ impl MyApp {
         display_builder: glutin_winit::DisplayBuilder,
     ) -> Self {
         Self {
-            appi: del_winit_glutin::app_internal::AppInternal::new(template, display_builder),
+            appi: del_gl_winit_glutin::app_internal::AppInternal::new(template, display_builder),
             renderer: None,
             ui_state: del_gl_core::view_ui_state::UiState::new(),
             view_rot: del_geo_core::view_rotation::Trackball::new(),
@@ -317,7 +317,7 @@ impl winit::application::ApplicationHandler for MyApp {
                 // Notable platforms here are Wayland and macOS, other don't require it
                 // and the function is no-op, but it's wise to resize it for portability
                 // reasons.
-                if let Some(del_winit_glutin::app_internal::AppState {
+                if let Some(del_gl_winit_glutin::app_internal::AppState {
                     gl_context,
                     gl_surface,
                     window: _,
@@ -343,7 +343,7 @@ impl winit::application::ApplicationHandler for MyApp {
             } => event_loop.exit(),
             _ => (),
         }
-        let redraw = del_winit_glutin::view_navigation(
+        let redraw = del_gl_winit_glutin::view_navigation(
             event,
             &mut self.ui_state,
             &mut self.view_prj,
@@ -358,7 +358,7 @@ impl winit::application::ApplicationHandler for MyApp {
 
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         use glutin::prelude::GlSurface;
-        if let Some(del_winit_glutin::app_internal::AppState {
+        if let Some(del_gl_winit_glutin::app_internal::AppState {
             gl_context,
             gl_surface,
             window,

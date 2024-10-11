@@ -24,10 +24,10 @@ arrayref = "0.3.8"
 
 # my internal
 del-gl-core = {path="del-gl-core"}
-del-winit-glutin = {path="del-winit-glutin"}
+del-gl-winit-glutin = {path= "del-gl-winit-glutin" }
 
 # my external
-del-geo-core = {path = "../del-geo/del-geo-core"}
-del-msh-core = {path = "../del-msh/del-msh-core"}
-# del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
-# del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+# del-geo-core = {path = "../del-geo/del-geo-core"}
+# del-msh-core = {path = "../del-msh/del-msh-core"}
+del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
+del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }

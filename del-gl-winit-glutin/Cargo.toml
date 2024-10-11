@@ -1,5 +1,5 @@
 [package]
-name = "del-winit-glutin"
+name = "del-gl-winit-glutin"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

@@ -19,7 +19,7 @@ num-traits = "0.2.19"
 arrayref = "0.3.8"
 #
 del-gl-core = {workspace = true}
-del-winit-glutin = {workspace = true}
+del-gl-winit-glutin = {workspace = true}
 #
 del-msh-core = {workspace = true}
 del-geo-core = {workspace = true}
