@@ -1,5 +1,5 @@
 [workspace]
-members = ["del-gl-core", "demos"]
+members = ["del-gl-core", "examples", "del-gl-winit-glutin"]
 resolver = "2"
 
 [workspace.package]
@@ -19,12 +19,18 @@ winit = "0.30.9"
 raw-window-handle = "0.6.2"
 image = "0.25.2"
 num-traits = "0.2.19"
-arrayref = "0.3.8"
-
-# my internal
 del-gl-core = {path="del-gl-core"}
 del-gl-winit-glutin = {path= "del-gl-winit-glutin" }
 
-# my external
+# for develop
+# del-geo-core =
+# del-msh-core =
+
+# for push
 del-geo-core = { git = "https://github.com/nobuyuki83/del-geo.git" }
 del-msh-core = { git = "https://github.com/nobuyuki83/del-msh.git" }
+
+# for deploy
+# del-geo-core =
+# del-msh-core =
+

@@ -1,5 +1,6 @@
 pub mod app_internal;
-pub mod app3;
+pub mod viewer3d_for_image_generator;
+pub mod viewer3d_for_gl_renderer;
 
 pub fn view_navigation(
     event: winit::event::WindowEvent,

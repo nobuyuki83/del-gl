@@ -138,13 +138,15 @@ void main() {
         }
     }
 
-    pub fn draw(&self, gl: &gl::Gl, mat_modelview: &[f32], mat_projection: &[f32]) {
-        let mp0 = mat_projection;
+    pub fn draw(&self, gl: &gl::Gl, mat_modelview: &[f32; 16], mat_projection: &[f32; 16]) {
+        let mp1 = mat_projection;
+        /*
         let mp1: [f32; 16] = [
             // mp1 = [z flip] * mp0
             mp0[0], mp0[1], -mp0[2], mp0[3], mp0[4], mp0[5], -mp0[6], mp0[7], mp0[8], mp0[9],
             -mp0[10], mp0[11], mp0[12], mp0[13], -mp0[14], mp0[15],
         ];
+         */
         unsafe {
             gl.UseProgram(self.program);
             gl.BindVertexArray(self.vao);

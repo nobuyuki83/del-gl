@@ -1,21 +1,20 @@
-use glutin::display::GlDisplay;
 use winit::application::ApplicationHandler;
 use winit::event::{KeyEvent, WindowEvent};
 use winit::keyboard::{Key, NamedKey};
 //
 use del_gl_core::gl;
-use crate::app_internal;
 
-pub trait Content {
-    fn new() -> Self;
-    fn compute_image(&mut self,
-                     img_shape: (usize, usize),
-                     cam_projection: &[f32;16],
-                     cam_model: &[f32;16]) -> Vec<u8>;
+pub trait ImageGeneratorFrom3dCamPose {
+    fn compute_image(
+        &mut self,
+        img_shape: (usize, usize),
+        cam_projection: &[f32; 16],
+        cam_model: &[f32; 16],
+    ) -> Vec<u8>;
 }
 
-pub struct MyApp<C: Content>{
-    pub content: C,
+pub struct Viewer3d {
+    pub content: Box<dyn ImageGeneratorFrom3dCamPose>,
     pub appi: crate::app_internal::AppInternal,
     pub renderer: Option<del_gl_core::drawer_array_xyzuv::Drawer>,
     pub view_rot: del_geo_core::view_rotation::Trackball,
@@ -23,14 +22,15 @@ pub struct MyApp<C: Content>{
     pub ui_state: del_gl_core::view_ui_state::UiState,
 }
 
-impl<C: Content> MyApp<C> {
+impl Viewer3d {
     pub fn new(
         template: glutin::config::ConfigTemplateBuilder,
         display_builder: glutin_winit::DisplayBuilder,
+        content: Box<dyn ImageGeneratorFrom3dCamPose>,
     ) -> Self {
         //
         Self {
-            appi: app_internal::AppInternal::new(template, display_builder),
+            appi: crate::app_internal::AppInternal::new(template, display_builder),
             renderer: None,
             ui_state: del_gl_core::view_ui_state::UiState::new(),
             view_rot: del_geo_core::view_rotation::Trackball::new(),
@@ -42,12 +42,12 @@ impl<C: Content> MyApp<C> {
                 proj_direction: true,
                 scale: 1.,
             },
-            content: C::new()
+            content,
         }
     }
 }
 
-impl<C: Content> ApplicationHandler for MyApp<C> {
+impl ApplicationHandler for Viewer3d {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         use glutin::display::GetGlDisplay;
         let Some(app_state) = self.appi.resumed(event_loop) else {
@@ -60,6 +60,7 @@ impl<C: Content> ApplicationHandler for MyApp<C> {
             let gl_display = &app_state.gl_context.display();
             let gl = gl::Gl::load_with(|symbol| {
                 let symbol = std::ffi::CString::new(symbol).unwrap();
+                use glutin::display::GlDisplay;
                 gl_display.get_proc_address(symbol.as_c_str()).cast()
             });
             let mut render = del_gl_core::drawer_array_xyzuv::Drawer::new(gl);
@@ -115,11 +116,11 @@ impl<C: Content> ApplicationHandler for MyApp<C> {
                 // Notable platforms here are Wayland and macOS, other don't require it
                 // and the function is no-op, but it's wise to resize it for portability
                 // reasons.
-                if let Some(app_internal::AppState {
-                                gl_context,
-                                gl_surface,
-                                window: _,
-                            }) = self.appi.state.as_ref()
+                if let Some(crate::app_internal::AppState {
+                    gl_context,
+                    gl_surface,
+                    window: _,
+                }) = self.appi.state.as_ref()
                 {
                     gl_surface.resize(
                         gl_context,
@@ -135,10 +136,10 @@ impl<C: Content> ApplicationHandler for MyApp<C> {
             WindowEvent::CloseRequested
             | WindowEvent::KeyboardInput {
                 event:
-                KeyEvent {
-                    logical_key: Key::Named(NamedKey::Escape),
-                    ..
-                },
+                    KeyEvent {
+                        logical_key: Key::Named(NamedKey::Escape),
+                        ..
+                    },
                 ..
             } => event_loop.exit(),
             _ => (),
@@ -158,11 +159,11 @@ impl<C: Content> ApplicationHandler for MyApp<C> {
 
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         use glutin::prelude::GlSurface;
-        if let Some(app_internal::AppState {
-                        gl_context,
-                        gl_surface,
-                        window,
-                    }) = self.appi.state.as_ref()
+        if let Some(crate::app_internal::AppState {
+            gl_context,
+            gl_surface,
+            window,
+        }) = self.appi.state.as_ref()
         {
             let img_shape = {
                 (
@@ -174,8 +175,9 @@ impl<C: Content> ApplicationHandler for MyApp<C> {
             let cam_projection = self
                 .view_prj
                 .mat4_col_major(img_shape.0 as f32 / img_shape.1 as f32);
-            let img_data = self.content.compute_image(
-                img_shape, &cam_projection, &cam_model);
+            let img_data = self
+                .content
+                .compute_image(img_shape, &cam_projection, &cam_model);
             assert_eq!(img_data.len(), img_shape.0 * img_shape.1 * 3);
             //println!("{:?}",img.color());
             let Some(ref rndr) = self.renderer else {
@@ -206,4 +208,3 @@ impl<C: Content> ApplicationHandler for MyApp<C> {
         }
     }
 }
-

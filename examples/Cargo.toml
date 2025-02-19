@@ -1,0 +1,23 @@
+[package]
+name = "demos"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+glutin.workspace = true
+glutin-winit.workspace = true
+winit.workspace = true
+image.workspace = true
+num-traits.workspace = true
+del-gl-core.workspace = true
+del-gl-winit-glutin.workspace = true
+del-msh-core.workspace = true
+del-geo-core.workspace = true
+
+[build-dependencies]
