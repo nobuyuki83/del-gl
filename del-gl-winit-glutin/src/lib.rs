@@ -5,9 +5,10 @@ pub mod viewer3d_for_gl_renderer;
 pub fn view_navigation(
     event: winit::event::WindowEvent,
     ui_state: &mut del_gl_core::view_ui_state::UiState,
-    view_prj: &mut del_geo_core::view_projection::Perspective,
-    view_rot: &mut del_geo_core::view_rotation::Trackball,
-) -> bool {
+    view_prj: &mut del_geo_core::view_projection::Perspective<f32>,
+    view_rot: &mut del_geo_core::view_rotation::Trackball<f32>,
+) -> bool
+{
     match event {
         winit::event::WindowEvent::MouseWheel {
             device_id: _,
@@ -15,7 +16,7 @@ pub fn view_navigation(
             ..
         } => match delta {
             winit::event::MouseScrollDelta::LineDelta(_, dy) => {
-                view_prj.scale *= 1.01_f32.powf(dy);
+                view_prj.scale *= 1.01f32.powf(dy);
                 return true;
             }
             _ => {
@@ -53,7 +54,7 @@ pub fn view_navigation(
             // println!("{:?} {:?} {:?}", device_id, position, modifiers);
             ui_state.update_cursor_position(position.x, position.y);
             if ui_state.is_left_btn && ui_state.is_mod_alt {
-                view_rot.camera_rotation(ui_state.cursor_dx, ui_state.cursor_dy);
+                view_rot.camera_rotation(ui_state.cursor_dx as f32, ui_state.cursor_dy as f32);
                 return true;
             }
             if ui_state.is_left_btn && ui_state.is_mod_shift {

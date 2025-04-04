@@ -162,8 +162,8 @@ impl Drop for MyRenderer {
 pub struct MyApp {
     pub appi: del_gl_winit_glutin::app_internal::AppInternal,
     pub renderer: Option<MyRenderer>,
-    pub view_rot: del_geo_core::view_rotation::Trackball,
-    pub view_prj: del_geo_core::view_projection::Perspective,
+    pub view_rot: del_geo_core::view_rotation::Trackball<f32>,
+    pub view_prj: del_geo_core::view_projection::Perspective<f32>,
     pub ui_state: del_gl_core::view_ui_state::UiState,
     pub is_left_btn_down_not_for_view_ctrl: bool,
     pub is_view_changed: bool,

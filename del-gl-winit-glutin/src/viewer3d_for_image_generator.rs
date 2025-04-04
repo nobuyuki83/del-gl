@@ -17,8 +17,8 @@ pub struct Viewer3d {
     pub content: Box<dyn ImageGeneratorFrom3dCamPose>,
     pub appi: crate::app_internal::AppInternal,
     pub renderer: Option<del_gl_core::drawer_array_xyzuv::Drawer>,
-    pub view_rot: del_geo_core::view_rotation::Trackball,
-    pub view_prj: del_geo_core::view_projection::Perspective,
+    pub view_rot: del_geo_core::view_rotation::Trackball<f32>,
+    pub view_prj: del_geo_core::view_projection::Perspective<f32>,
     pub ui_state: del_gl_core::view_ui_state::UiState,
 }
 
